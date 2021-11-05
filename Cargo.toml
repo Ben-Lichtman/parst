@@ -1,0 +1,13 @@
+[package]
+name = "parst"
+version = "0.1.0"
+edition = "2021"
+description = "declarative parsing"
+license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+parst_derive = "0.1.0"
+memchr = "2.4.1"
+thiserror = "1.0.30"
