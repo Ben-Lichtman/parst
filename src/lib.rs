@@ -1,14 +1,16 @@
-pub mod error;
-pub mod primitives;
+#![feature(array_from_fn)]
 
-use std::io::Write;
+pub mod error;
+
+mod primitives;
 
 use crate::error::{Error, Result};
+use std::io::Write;
 
 pub type PResult<'a, O, E = Error> = std::result::Result<(O, &'a [u8]), E>;
 
 pub trait Parsable<'a>: Sized {
-	fn read(i: &'a [u8]) -> PResult<Self>;
+	fn read(bytes: &'a [u8]) -> PResult<Self>;
 }
 
 pub trait Serializeable<'a> {
