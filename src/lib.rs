@@ -4,6 +4,9 @@ pub mod error;
 
 mod primitives;
 
+#[cfg(feature = "derive")]
+pub use parst_derive::Parsable;
+
 use crate::error::Error;
 use std::io::{self, Write};
 
