@@ -4,8 +4,8 @@ pub mod error;
 
 mod primitives;
 
-use crate::error::{Error, Result};
-use std::io::Write;
+use crate::error::Error;
+use std::io::{self, Write};
 
 pub type PResult<'a, O, E = Error> = std::result::Result<(O, &'a [u8]), E>;
 
@@ -14,5 +14,5 @@ pub trait Parsable<'a>: Sized {
 }
 
 pub trait Serializeable<'a> {
-	fn write(w: impl Write) -> Result<()>;
+	fn write(&self, w: impl Write) -> io::Result<()>;
 }

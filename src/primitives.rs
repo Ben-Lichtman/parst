@@ -121,6 +121,56 @@ impl<'a> Parsable<'a> for &'a [u8] {
 	fn read(bytes: &'a [u8]) -> PResult<Self> { Ok((bytes, &[])) }
 }
 
+impl<'a, T> Parsable<'a> for Vec<T>
+where
+	T: Parsable<'a>,
+{
+	fn read(mut bytes: &'a [u8]) -> PResult<Self> {
+		let mut v = Vec::new();
+		while let Ok((element, remainder)) = T::read(bytes) {
+			v.push(element);
+			bytes = remainder;
+		}
+		Ok((v, bytes))
+	}
+}
+
+impl<'a, T> Parsable<'a> for Box<T>
+where
+	T: Parsable<'a>,
+{
+	fn read(bytes: &'a [u8]) -> PResult<Self> {
+		let (boxed, bytes) = T::read(bytes)?;
+		Ok((Box::new(boxed), bytes))
+	}
+}
+
+impl<'a, T> Parsable<'a> for Option<T>
+where
+	T: Parsable<'a>,
+{
+	fn read(bytes: &'a [u8]) -> PResult<Self> {
+		match T::read(bytes) {
+			Ok((inner, bytes)) => Ok((Some(inner), bytes)),
+			Err(_) => Ok((None, bytes)),
+		}
+	}
+}
+
+impl<'a, T, const N: usize> Parsable<'a> for [T; N]
+where
+	T: Parsable<'a>,
+{
+	fn read(mut bytes: &'a [u8]) -> PResult<Self> {
+		try_from_fn(|_| {
+			let (element, this_bytes) = Parsable::read(bytes)?;
+			bytes = this_bytes;
+			Ok(element)
+		})
+		.map(|array| (array, bytes))
+	}
+}
+
 impl<'a, A> Parsable<'a> for (A,)
 where
 	A: Parsable<'a>,
@@ -254,19 +304,5 @@ where
 		let (g, bytes) = Parsable::read(bytes)?;
 		let (h, bytes) = Parsable::read(bytes)?;
 		Ok(((a, b, c, d, e, f, g, h), bytes))
-	}
-}
-
-impl<'a, T, const N: usize> Parsable<'a> for [T; N]
-where
-	T: Parsable<'a>,
-{
-	fn read(mut bytes: &'a [u8]) -> PResult<Self> {
-		try_from_fn(|_| {
-			let (element, this_bytes) = Parsable::read(bytes)?;
-			bytes = this_bytes;
-			Ok(element)
-		})
-		.map(|array| (array, bytes))
 	}
 }
