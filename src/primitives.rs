@@ -175,6 +175,10 @@ where
 	}
 }
 
+impl Parsable<'_> for () {
+	fn read(bytes: &[u8]) -> PResult<Self> { Ok(((), bytes)) }
+}
+
 impl<'a, A> Parsable<'a> for (A,)
 where
 	A: Parsable<'a>,
