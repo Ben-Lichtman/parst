@@ -1,11 +1,11 @@
 use crate::{error::Error, PResult, Parsable};
-use std::array::try_from_fn;
+use std::{array::try_from_fn, marker::PhantomData};
 
 impl Parsable<'_> for u8 {
 	fn read(bytes: &[u8]) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, bytes @ ..] => (*a, bytes),
-			_ => return Err(Error::InvalidInput),
+			_ => return Err(Error::NotEnoughBytes),
 		};
 
 		Ok((head, bytes))
@@ -16,7 +16,7 @@ impl Parsable<'_> for i8 {
 	fn read(bytes: &[u8]) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, bytes @ ..] => (*a as _, bytes),
-			_ => return Err(Error::InvalidInput),
+			_ => return Err(Error::NotEnoughBytes),
 		};
 
 		Ok((head, bytes))
@@ -27,7 +27,7 @@ impl Parsable<'_> for u16 {
 	fn read(bytes: &[u8]) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, bytes @ ..] => (Self::from_le_bytes([*a, *b]), bytes),
-			_ => return Err(Error::InvalidInput),
+			_ => return Err(Error::NotEnoughBytes),
 		};
 
 		Ok((head, bytes))
@@ -38,7 +38,7 @@ impl Parsable<'_> for i16 {
 	fn read(bytes: &[u8]) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, bytes @ ..] => (Self::from_le_bytes([*a, *b]), bytes),
-			_ => return Err(Error::InvalidInput),
+			_ => return Err(Error::NotEnoughBytes),
 		};
 
 		Ok((head, bytes))
@@ -49,7 +49,7 @@ impl Parsable<'_> for u32 {
 	fn read(bytes: &[u8]) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, bytes @ ..] => (Self::from_le_bytes([*a, *b, *c, *d]), bytes),
-			_ => return Err(Error::InvalidInput),
+			_ => return Err(Error::NotEnoughBytes),
 		};
 
 		Ok((head, bytes))
@@ -60,7 +60,7 @@ impl Parsable<'_> for i32 {
 	fn read(bytes: &[u8]) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, bytes @ ..] => (Self::from_le_bytes([*a, *b, *c, *d]), bytes),
-			_ => return Err(Error::InvalidInput),
+			_ => return Err(Error::NotEnoughBytes),
 		};
 
 		Ok((head, bytes))
@@ -73,7 +73,7 @@ impl Parsable<'_> for u64 {
 			[a, b, c, d, e, f, g, h, bytes @ ..] => {
 				(Self::from_le_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
 			}
-			_ => return Err(Error::InvalidInput),
+			_ => return Err(Error::NotEnoughBytes),
 		};
 
 		Ok((head, bytes))
@@ -86,7 +86,7 @@ impl Parsable<'_> for i64 {
 			[a, b, c, d, e, f, g, h, bytes @ ..] => {
 				(Self::from_le_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
 			}
-			_ => return Err(Error::InvalidInput),
+			_ => return Err(Error::NotEnoughBytes),
 		};
 
 		Ok((head, bytes))
@@ -97,7 +97,7 @@ impl Parsable<'_> for f32 {
 	fn read(bytes: &[u8]) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, bytes @ ..] => (Self::from_le_bytes([*a, *b, *c, *d]), bytes),
-			_ => return Err(Error::InvalidInput),
+			_ => return Err(Error::NotEnoughBytes),
 		};
 
 		Ok((head, bytes))
@@ -110,7 +110,7 @@ impl Parsable<'_> for f64 {
 			[a, b, c, d, e, f, g, h, bytes @ ..] => {
 				(Self::from_le_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
 			}
-			_ => return Err(Error::InvalidInput),
+			_ => return Err(Error::NotEnoughBytes),
 		};
 
 		Ok((head, bytes))
@@ -155,6 +155,10 @@ where
 			Err(_) => Ok((None, bytes)),
 		}
 	}
+}
+
+impl<T> Parsable<'_> for PhantomData<T> {
+	fn read(bytes: &[u8]) -> PResult<Self> { Ok((PhantomData, bytes)) }
 }
 
 impl<'a, T, const N: usize> Parsable<'a> for [T; N]
