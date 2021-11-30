@@ -1,14 +1,6 @@
-[package]
-name = "parst"
-version = "0.1.4"
-edition = "2021"
-description = "declarative parsing"
-license = "MIT OR Apache-2.0"
+[workspace]
 
-[dependencies]
-thiserror = "1.0.30"
-parst_derive = { version = "0.1.2", optional = true }
-
-[features]
-default = ["derive"]
-derive = ["parst_derive"]
+members = [
+    "parst",
+    "parst_derive",
+]
