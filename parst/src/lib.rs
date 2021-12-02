@@ -1,6 +1,8 @@
 #![feature(array_from_fn)]
 
 pub mod error;
+#[cfg(feature = "extra")]
+pub mod extra;
 
 mod primitives;
 
@@ -16,8 +18,4 @@ where
 	C: Copy,
 {
 	fn read(bytes: &'a [u8], context: C) -> PResult<'a, Self>;
-
-	fn read_str(string: &'a str, context: C) -> PResult<'a, Self> {
-		Self::read(string.as_bytes(), context)
-	}
 }
