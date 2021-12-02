@@ -5,7 +5,7 @@ use syn::{
 	Data, DataEnum, DataStruct, DeriveInput, Field, Fields, FieldsNamed, FieldsUnnamed, Ident,
 };
 
-use crate::attributes::parse_inner_attributes;
+use crate::attributes::{parse_inner_attributes, InnerContext};
 
 pub fn generate_expression(input: &DeriveInput) -> TokenStream {
 	match &input.data {
@@ -19,7 +19,7 @@ fn generate_struct(input: &DataStruct) -> TokenStream {
 	let (assignments, finished) = gen_field_reads(&input.fields, quote! { Self });
 	quote! {
 		#assignments
-		Ok((#finished, bytes))
+		Ok((#finished, __bytes))
 	}
 }
 
@@ -34,7 +34,7 @@ fn generate_enum(input: &DataEnum) -> TokenStream {
 			quote! {
 				let #fn_name = || -> ::parst::PResult<Self> {
 					#assignments
-					Ok((#finished, bytes))
+					Ok((#finished, __bytes))
 				};
 				if let Ok(x) = #fn_name() {
 					return Ok(x);
@@ -91,17 +91,20 @@ fn gen_field_reads(fields: &Fields, name: TokenStream) -> (TokenStream, TokenStr
 	}
 }
 
-fn gen_single_field(Field { attrs, .. }: &Field, name: Ident) -> TokenStream {
+fn gen_single_field(Field { attrs, ty, .. }: &Field, name: Ident) -> TokenStream {
 	let inner_attributes = parse_inner_attributes(attrs);
 
 	let mut tokens = TokenStream::new();
 
 	match inner_attributes.with_context {
-		false => tokens.extend(quote! {
-			let (#name, bytes) = ::parst::Parsable::read(bytes, ())?;
+		InnerContext::None => tokens.extend(quote! {
+			let (#name, __bytes) = <#ty as ::parst::Parsable<_>>::read(__bytes, ())?;
 		}),
-		true => tokens.extend(quote! {
-			let (#name, bytes) = ::parst::Parsable::read(bytes, _context)?;
+		InnerContext::Parent => tokens.extend(quote! {
+			let (#name, __bytes) = <#ty as ::parst::Parsable<_>>::read(__bytes, __context)?;
+		}),
+		InnerContext::Field(f) => tokens.extend(quote! {
+			let (#name, __bytes) = <#ty as ::parst::Parsable<_>>::read(__bytes, #f)?;
 		}),
 	}
 	if let Some(l) = inner_attributes.assert_eq {
