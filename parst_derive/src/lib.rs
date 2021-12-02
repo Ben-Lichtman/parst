@@ -21,7 +21,7 @@ fn process_input(input: &DeriveInput) -> TokenStream {
 
 	let outer_attributes = parse_outer_attributes(&input.attrs);
 
-	let expression = generate_expression(&input);
+	let expression = generate_expression(input);
 
 	match outer_attributes.context {
 		None => {
@@ -36,14 +36,6 @@ fn process_input(input: &DeriveInput) -> TokenStream {
 					}
 				}
 			}
-			// quote! {
-			// 	impl<'a> ::parst::Parsable<'a, ()> for #ident #generics {
-			// 		fn read(__bytes: &'a [u8], __context: ()) -> ::parst::PResult<'a, Self> {
-			// 			#![allow(non_snake_case)]
-			// 			#expression
-			// 		}
-			// 	}
-			// }
 		}
 		Some(t) => {
 			// Implement for some specific C
