@@ -7,8 +7,9 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 thiserror = "1.0.30"
-parst_derive = { version = "0.1.3", path = "../parst_derive" , optional = true }
+parst_derive = { version = "0.1.4", path = "../parst_derive" , optional = true }
 
 [features]
-default = ["derive"]
+default = ["derive", "extra"]
 derive = ["parst_derive"]
+extra = []
