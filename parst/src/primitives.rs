@@ -1,6 +1,12 @@
 use crate::{error::Error, PResult, Parsable};
 use std::{array::try_from_fn, marker::PhantomData};
 
+fn try_split_at(input: &[u8], at: usize) -> PResult<&[u8]> {
+	(input.len() >= at)
+		.then(|| input.split_at(at))
+		.ok_or(Error::NotEnoughBytes)
+}
+
 impl<C> Parsable<'_, C> for u8
 where
 	C: Copy,
@@ -152,6 +158,18 @@ where
 	C: Copy,
 {
 	fn read(bytes: &'a [u8], _context: C) -> PResult<Self> { Ok((bytes, &[])) }
+}
+
+impl<'a, C, const N: usize> Parsable<'a, C> for &'a [u8; N]
+where
+	C: Copy,
+{
+	fn read(bytes: &'a [u8], _context: C) -> PResult<Self> {
+		let (head, bytes) = try_split_at(bytes, N)?;
+		// SAFETY: at this point we know that the slice is large enough
+		let arry_ref = unsafe { &*head.as_ptr().cast() };
+		Ok((arry_ref, bytes))
+	}
 }
 
 impl<'a, C, T> Parsable<'a, C> for Vec<T>

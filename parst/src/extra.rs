@@ -6,7 +6,7 @@ fn try_split_at(input: &[u8], at: usize) -> PResult<&[u8]> {
 		.ok_or(Error::NotEnoughBytes)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct VarBytes<'a, L> {
 	_length: L,
 	slice: &'a [u8],
@@ -34,7 +34,7 @@ where
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct VarStructs<L, T> {
 	_length: L,
 	vec: Vec<T>,
@@ -52,12 +52,13 @@ where
 {
 	fn read(bytes: &'a [u8], context: C) -> PResult<Self> {
 		let (length, mut bytes) = L::read(bytes, ())?;
-		let mut vec = Vec::new();
-		for _ in 0..length.into() as _ {
-			let (t, tail) = T::read(bytes, context)?;
-			bytes = tail;
-			vec.push(t);
-		}
+		let vec = (0..length.into())
+			.map(|_| {
+				let (t, tail) = T::read(bytes, context)?;
+				bytes = tail;
+				Ok(t)
+			})
+			.collect::<Result<Vec<_>, _>>()?;
 		Ok((
 			Self {
 				_length: length,
