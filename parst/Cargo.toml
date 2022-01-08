@@ -1,13 +1,13 @@
 [package]
 name = "parst"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 description = "declarative parsing"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
 thiserror = "1.0.30"
-parst_derive = { version = "0.1.7", path = "../parst_derive" , optional = true }
+parst_derive = { version = "0.1.8", path = "../parst_derive" , optional = true }
 
 [features]
 default = ["derive", "extra"]

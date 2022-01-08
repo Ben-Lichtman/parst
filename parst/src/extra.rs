@@ -1,4 +1,4 @@
-use crate::{error::Error, PResult, Parsable};
+use crate::{error::Error, Deparsable, PResult, Parsable};
 
 fn try_split_at(input: &[u8], at: usize) -> PResult<&[u8]> {
 	(input.len() >= at)
@@ -8,7 +8,7 @@ fn try_split_at(input: &[u8], at: usize) -> PResult<&[u8]> {
 
 #[derive(Debug, Default)]
 pub struct VarBytes<'a, L> {
-	_length: L,
+	length: L,
 	slice: &'a [u8],
 }
 
@@ -24,19 +24,24 @@ where
 	fn read(bytes: &'a [u8], _context: C) -> PResult<Self> {
 		let (length, bytes) = L::read(bytes, ())?;
 		let (slice, bytes) = try_split_at(bytes, length.into() as _)?;
-		Ok((
-			Self {
-				_length: length,
-				slice,
-			},
-			bytes,
-		))
+		Ok((Self { length, slice }, bytes))
+	}
+}
+
+impl<L> Deparsable for VarBytes<'_, L>
+where
+	L: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.length.write(&mut w)?;
+		self.slice.write(&mut w)?;
+		Ok(())
 	}
 }
 
 #[derive(Debug, Default)]
 pub struct VarStructs<L, T> {
-	_length: L,
+	length: L,
 	vec: Vec<T>,
 }
 
@@ -59,12 +64,18 @@ where
 				Ok(t)
 			})
 			.collect::<Result<Vec<_>, _>>()?;
-		Ok((
-			Self {
-				_length: length,
-				vec,
-			},
-			bytes,
-		))
+		Ok((Self { length, vec }, bytes))
+	}
+}
+
+impl<L, T> Deparsable for VarStructs<L, T>
+where
+	L: Deparsable,
+	T: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.length.write(&mut w)?;
+		self.vec.write(&mut w)?;
+		Ok(())
 	}
 }

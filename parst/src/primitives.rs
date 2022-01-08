@@ -1,5 +1,5 @@
-use crate::{error::Error, PResult, Parsable};
-use std::{array::try_from_fn, marker::PhantomData};
+use crate::{error::Error, Deparsable, PResult, Parsable};
+use std::{array::try_from_fn, marker::PhantomData, ops::Deref};
 
 fn try_split_at(input: &[u8], at: usize) -> PResult<&[u8]> {
 	(input.len() >= at)
@@ -21,6 +21,10 @@ where
 	}
 }
 
+impl Deparsable for u8 {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> { w.write_all(&[*self]) }
+}
+
 impl<C> Parsable<'_, C> for i8
 where
 	C: Copy,
@@ -32,6 +36,12 @@ where
 		};
 
 		Ok((head, bytes))
+	}
+}
+
+impl Deparsable for i8 {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		w.write_all(&[*self as _])
 	}
 }
 
@@ -49,6 +59,12 @@ where
 	}
 }
 
+impl Deparsable for u16 {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		w.write_all(&self.to_le_bytes())
+	}
+}
+
 impl<C> Parsable<'_, C> for i16
 where
 	C: Copy,
@@ -60,6 +76,12 @@ where
 		};
 
 		Ok((head, bytes))
+	}
+}
+
+impl Deparsable for i16 {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		w.write_all(&self.to_le_bytes())
 	}
 }
 
@@ -77,6 +99,12 @@ where
 	}
 }
 
+impl Deparsable for u32 {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		w.write_all(&self.to_le_bytes())
+	}
+}
+
 impl<C> Parsable<'_, C> for i32
 where
 	C: Copy,
@@ -88,6 +116,12 @@ where
 		};
 
 		Ok((head, bytes))
+	}
+}
+
+impl Deparsable for i32 {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		w.write_all(&self.to_le_bytes())
 	}
 }
 
@@ -107,6 +141,12 @@ where
 	}
 }
 
+impl Deparsable for u64 {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		w.write_all(&self.to_le_bytes())
+	}
+}
+
 impl<C> Parsable<'_, C> for i64
 where
 	C: Copy,
@@ -123,6 +163,12 @@ where
 	}
 }
 
+impl Deparsable for i64 {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		w.write_all(&self.to_le_bytes())
+	}
+}
+
 impl<C> Parsable<'_, C> for f32
 where
 	C: Copy,
@@ -134,6 +180,12 @@ where
 		};
 
 		Ok((head, bytes))
+	}
+}
+
+impl Deparsable for f32 {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		w.write_all(&self.to_le_bytes())
 	}
 }
 
@@ -153,11 +205,21 @@ where
 	}
 }
 
+impl Deparsable for f64 {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		w.write_all(&self.to_le_bytes())
+	}
+}
+
 impl<'a, C> Parsable<'a, C> for &'a [u8]
 where
 	C: Copy,
 {
 	fn read(bytes: &'a [u8], _context: C) -> PResult<Self> { Ok((bytes, &[])) }
+}
+
+impl Deparsable for &[u8] {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> { w.write_all(self) }
 }
 
 impl<'a, C, const N: usize> Parsable<'a, C> for &'a [u8; N]
@@ -170,6 +232,10 @@ where
 		let arry_ref = unsafe { &*head.as_ptr().cast() };
 		Ok((arry_ref, bytes))
 	}
+}
+
+impl<const N: usize> Deparsable for &[u8; N] {
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> { w.write_all(*self) }
 }
 
 impl<'a, C, T> Parsable<'a, C> for Vec<T>
@@ -187,6 +253,15 @@ where
 	}
 }
 
+impl<T> Deparsable for Vec<T>
+where
+	T: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.iter().try_for_each(|element| element.write(&mut w))
+	}
+}
+
 impl<'a, C, T> Parsable<'a, C> for Box<T>
 where
 	C: Copy,
@@ -195,6 +270,15 @@ where
 	fn read(bytes: &'a [u8], context: C) -> PResult<Self> {
 		let (boxed, bytes) = Parsable::read(bytes, context)?;
 		Ok((Box::new(boxed), bytes))
+	}
+}
+
+impl<T> Deparsable for Box<T>
+where
+	T: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.deref().write(&mut w)
 	}
 }
 
@@ -211,11 +295,30 @@ where
 	}
 }
 
+impl<T> Deparsable for Option<T>
+where
+	T: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		if let Some(inner) = self {
+			inner.write(&mut w)?;
+		}
+		Ok(())
+	}
+}
+
 impl<C, T> Parsable<'_, C> for PhantomData<T>
 where
 	C: Copy,
 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> { Ok((PhantomData, bytes)) }
+}
+
+impl<T> Deparsable for PhantomData<T>
+where
+	T: Deparsable,
+{
+	fn write(&self, _w: impl std::io::Write) -> std::io::Result<()> { Ok(()) }
 }
 
 impl<'a, C, T, const N: usize> Parsable<'a, C> for [T; N]
@@ -233,11 +336,24 @@ where
 	}
 }
 
+impl<T, const N: usize> Deparsable for [T; N]
+where
+	T: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.iter().try_for_each(|element| element.write(&mut w))
+	}
+}
+
 impl<C> Parsable<'_, C> for ()
 where
 	C: Copy,
 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> { Ok(((), bytes)) }
+}
+
+impl Deparsable for () {
+	fn write(&self, _w: impl std::io::Write) -> std::io::Result<()> { Ok(()) }
 }
 
 impl<'a, Ctx, A> Parsable<'a, Ctx> for (A,)
@@ -251,6 +367,16 @@ where
 	}
 }
 
+impl<A> Deparsable for (A,)
+where
+	A: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(&mut w)?;
+		Ok(())
+	}
+}
+
 impl<'a, Ctx, A, B> Parsable<'a, Ctx> for (A, B)
 where
 	Ctx: Copy,
@@ -261,6 +387,18 @@ where
 		let (a, bytes) = Parsable::read(bytes, context)?;
 		let (b, bytes) = Parsable::read(bytes, context)?;
 		Ok(((a, b), bytes))
+	}
+}
+
+impl<A, B> Deparsable for (A, B)
+where
+	A: Deparsable,
+	B: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(&mut w)?;
+		self.1.write(&mut w)?;
+		Ok(())
 	}
 }
 
@@ -279,6 +417,20 @@ where
 	}
 }
 
+impl<A, B, C> Deparsable for (A, B, C)
+where
+	A: Deparsable,
+	B: Deparsable,
+	C: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(&mut w)?;
+		self.1.write(&mut w)?;
+		self.2.write(&mut w)?;
+		Ok(())
+	}
+}
+
 impl<'a, Ctx, A, B, C, D> Parsable<'a, Ctx> for (A, B, C, D)
 where
 	Ctx: Copy,
@@ -293,6 +445,22 @@ where
 		let (c, bytes) = Parsable::read(bytes, context)?;
 		let (d, bytes) = Parsable::read(bytes, context)?;
 		Ok(((a, b, c, d), bytes))
+	}
+}
+
+impl<A, B, C, D> Deparsable for (A, B, C, D)
+where
+	A: Deparsable,
+	B: Deparsable,
+	C: Deparsable,
+	D: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(&mut w)?;
+		self.1.write(&mut w)?;
+		self.2.write(&mut w)?;
+		self.3.write(&mut w)?;
+		Ok(())
 	}
 }
 
@@ -315,6 +483,24 @@ where
 	}
 }
 
+impl<A, B, C, D, E> Deparsable for (A, B, C, D, E)
+where
+	A: Deparsable,
+	B: Deparsable,
+	C: Deparsable,
+	D: Deparsable,
+	E: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(&mut w)?;
+		self.1.write(&mut w)?;
+		self.2.write(&mut w)?;
+		self.3.write(&mut w)?;
+		self.4.write(&mut w)?;
+		Ok(())
+	}
+}
+
 impl<'a, Ctx, A, B, C, D, E, F> Parsable<'a, Ctx> for (A, B, C, D, E, F)
 where
 	Ctx: Copy,
@@ -333,6 +519,26 @@ where
 		let (e, bytes) = Parsable::read(bytes, context)?;
 		let (f, bytes) = Parsable::read(bytes, context)?;
 		Ok(((a, b, c, d, e, f), bytes))
+	}
+}
+
+impl<A, B, C, D, E, F> Deparsable for (A, B, C, D, E, F)
+where
+	A: Deparsable,
+	B: Deparsable,
+	C: Deparsable,
+	D: Deparsable,
+	E: Deparsable,
+	F: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(&mut w)?;
+		self.1.write(&mut w)?;
+		self.2.write(&mut w)?;
+		self.3.write(&mut w)?;
+		self.4.write(&mut w)?;
+		self.5.write(&mut w)?;
+		Ok(())
 	}
 }
 
@@ -359,6 +565,28 @@ where
 	}
 }
 
+impl<A, B, C, D, E, F, G> Deparsable for (A, B, C, D, E, F, G)
+where
+	A: Deparsable,
+	B: Deparsable,
+	C: Deparsable,
+	D: Deparsable,
+	E: Deparsable,
+	F: Deparsable,
+	G: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(&mut w)?;
+		self.1.write(&mut w)?;
+		self.2.write(&mut w)?;
+		self.3.write(&mut w)?;
+		self.4.write(&mut w)?;
+		self.5.write(&mut w)?;
+		self.6.write(&mut w)?;
+		Ok(())
+	}
+}
+
 impl<'a, Ctx, A, B, C, D, E, F, G, H> Parsable<'a, Ctx> for (A, B, C, D, E, F, G, H)
 where
 	Ctx: Copy,
@@ -381,5 +609,29 @@ where
 		let (g, bytes) = Parsable::read(bytes, context)?;
 		let (h, bytes) = Parsable::read(bytes, context)?;
 		Ok(((a, b, c, d, e, f, g, h), bytes))
+	}
+}
+
+impl<A, B, C, D, E, F, G, H> Deparsable for (A, B, C, D, E, F, G, H)
+where
+	A: Deparsable,
+	B: Deparsable,
+	C: Deparsable,
+	D: Deparsable,
+	E: Deparsable,
+	F: Deparsable,
+	G: Deparsable,
+	H: Deparsable,
+{
+	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(&mut w)?;
+		self.1.write(&mut w)?;
+		self.2.write(&mut w)?;
+		self.3.write(&mut w)?;
+		self.4.write(&mut w)?;
+		self.5.write(&mut w)?;
+		self.6.write(&mut w)?;
+		self.7.write(&mut w)?;
+		Ok(())
 	}
 }
