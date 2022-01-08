@@ -6,6 +6,8 @@ pub mod extra;
 
 mod primitives;
 
+use std::io::Write;
+
 #[cfg(feature = "derive")]
 pub use parst_derive::Parsable;
 
@@ -18,4 +20,8 @@ where
 	C: Copy,
 {
 	fn read(bytes: &'a [u8], context: C) -> PResult<'a, Self>;
+}
+
+pub trait Deparsable {
+	fn write(&self, w: impl Write) -> std::io::Result<()>;
 }

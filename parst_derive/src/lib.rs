@@ -1,7 +1,10 @@
-mod attributes;
-mod generate;
+mod deparsable;
+mod parsable;
 
-use crate::{attributes::parse_outer_attributes, generate::generate_expression};
+use crate::{
+	deparsable::generate::generate_expression_deparsable,
+	parsable::{attributes::parse_outer_attributes, generate::generate_expression_parsable},
+};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
@@ -10,18 +13,18 @@ use syn::{parse_macro_input, DeriveInput};
 	Parsable,
 	attributes(parst, assert_eq, assert_ne, with_context, with_field_context)
 )]
-pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn derive_parsable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 	let derive_input = parse_macro_input!(input as DeriveInput);
-	proc_macro::TokenStream::from(process_input(&derive_input))
+	proc_macro::TokenStream::from(process_input_parsable(&derive_input))
 }
 
-fn process_input(input: &DeriveInput) -> TokenStream {
+fn process_input_parsable(input: &DeriveInput) -> TokenStream {
 	let ident = &input.ident;
 	let generics = &input.generics;
 
 	let outer_attributes = parse_outer_attributes(&input.attrs);
 
-	let expression = generate_expression(input);
+	let expression = generate_expression_parsable(input);
 
 	match outer_attributes.context {
 		None => {
@@ -46,6 +49,31 @@ fn process_input(input: &DeriveInput) -> TokenStream {
 						#expression
 					}
 				}
+			}
+		}
+	}
+}
+
+#[proc_macro_derive(
+	Deparsable,
+	attributes(parst, assert_eq, assert_ne, with_context, with_field_context)
+)]
+pub fn derive_deparsable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+	let derive_input = parse_macro_input!(input as DeriveInput);
+	proc_macro::TokenStream::from(process_input_deparsable(&derive_input))
+}
+
+fn process_input_deparsable(input: &DeriveInput) -> TokenStream {
+	let ident = &input.ident;
+	let generics = &input.generics;
+
+	let expression = generate_expression_deparsable(input);
+	quote! {
+		impl ::parst::Deparsable for #ident #generics
+		{
+			fn write(&self, mut __w: impl ::std::io::Write) -> ::std::io::Result<()> {
+				#![allow(non_snake_case)]
+				#expression
 			}
 		}
 	}
