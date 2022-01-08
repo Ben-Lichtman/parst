@@ -51,7 +51,7 @@ where
 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
-			[a, b, bytes @ ..] => (Self::from_le_bytes([*a, *b]), bytes),
+			[a, b, bytes @ ..] => (Self::from_ne_bytes([*a, *b]), bytes),
 			_ => return Err(Error::NotEnoughBytes),
 		};
 
@@ -61,7 +61,7 @@ where
 
 impl Deparsable for u16 {
 	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.to_le_bytes())
+		w.write_all(&self.to_ne_bytes())
 	}
 }
 
@@ -71,7 +71,7 @@ where
 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
-			[a, b, bytes @ ..] => (Self::from_le_bytes([*a, *b]), bytes),
+			[a, b, bytes @ ..] => (Self::from_ne_bytes([*a, *b]), bytes),
 			_ => return Err(Error::NotEnoughBytes),
 		};
 
@@ -81,7 +81,7 @@ where
 
 impl Deparsable for i16 {
 	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.to_le_bytes())
+		w.write_all(&self.to_ne_bytes())
 	}
 }
 
@@ -91,7 +91,7 @@ where
 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
-			[a, b, c, d, bytes @ ..] => (Self::from_le_bytes([*a, *b, *c, *d]), bytes),
+			[a, b, c, d, bytes @ ..] => (Self::from_ne_bytes([*a, *b, *c, *d]), bytes),
 			_ => return Err(Error::NotEnoughBytes),
 		};
 
@@ -101,7 +101,7 @@ where
 
 impl Deparsable for u32 {
 	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.to_le_bytes())
+		w.write_all(&self.to_ne_bytes())
 	}
 }
 
@@ -111,7 +111,7 @@ where
 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
-			[a, b, c, d, bytes @ ..] => (Self::from_le_bytes([*a, *b, *c, *d]), bytes),
+			[a, b, c, d, bytes @ ..] => (Self::from_ne_bytes([*a, *b, *c, *d]), bytes),
 			_ => return Err(Error::NotEnoughBytes),
 		};
 
@@ -121,7 +121,7 @@ where
 
 impl Deparsable for i32 {
 	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.to_le_bytes())
+		w.write_all(&self.to_ne_bytes())
 	}
 }
 
@@ -132,7 +132,7 @@ where
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, e, f, g, h, bytes @ ..] => {
-				(Self::from_le_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
+				(Self::from_ne_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
 			}
 			_ => return Err(Error::NotEnoughBytes),
 		};
@@ -143,7 +143,7 @@ where
 
 impl Deparsable for u64 {
 	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.to_le_bytes())
+		w.write_all(&self.to_ne_bytes())
 	}
 }
 
@@ -154,7 +154,7 @@ where
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, e, f, g, h, bytes @ ..] => {
-				(Self::from_le_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
+				(Self::from_ne_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
 			}
 			_ => return Err(Error::NotEnoughBytes),
 		};
@@ -165,7 +165,7 @@ where
 
 impl Deparsable for i64 {
 	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.to_le_bytes())
+		w.write_all(&self.to_ne_bytes())
 	}
 }
 
@@ -175,7 +175,7 @@ where
 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
-			[a, b, c, d, bytes @ ..] => (Self::from_le_bytes([*a, *b, *c, *d]), bytes),
+			[a, b, c, d, bytes @ ..] => (Self::from_ne_bytes([*a, *b, *c, *d]), bytes),
 			_ => return Err(Error::NotEnoughBytes),
 		};
 
@@ -185,7 +185,7 @@ where
 
 impl Deparsable for f32 {
 	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.to_le_bytes())
+		w.write_all(&self.to_ne_bytes())
 	}
 }
 
@@ -196,7 +196,7 @@ where
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, e, f, g, h, bytes @ ..] => {
-				(Self::from_le_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
+				(Self::from_ne_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
 			}
 			_ => return Err(Error::NotEnoughBytes),
 		};
@@ -207,7 +207,7 @@ where
 
 impl Deparsable for f64 {
 	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.to_le_bytes())
+		w.write_all(&self.to_ne_bytes())
 	}
 }
 
