@@ -1,6 +1,6 @@
 use crate::{error::Error, Deparsable, PResult, Parsable};
 
-pub struct LE<T>(T);
+pub struct LE<T>(pub T);
 
 impl<T> AsRef<T> for LE<T> {
 	fn as_ref(&self) -> &T { &self.0 }
@@ -168,7 +168,7 @@ impl Deparsable for LE<i64> {
 	}
 }
 
-pub struct BE<T>(T);
+pub struct BE<T>(pub T);
 
 impl<T> AsRef<T> for BE<T> {
 	fn as_ref(&self) -> &T { &self.0 }
