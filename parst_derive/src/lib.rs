@@ -54,10 +54,7 @@ fn process_input_parsable(input: &DeriveInput) -> TokenStream {
 	}
 }
 
-#[proc_macro_derive(
-	Deparsable,
-	attributes(parst, assert_eq, assert_ne, with_context, with_field_context)
-)]
+#[proc_macro_derive(Deparsable)]
 pub fn derive_deparsable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 	let derive_input = parse_macro_input!(input as DeriveInput);
 	proc_macro::TokenStream::from(process_input_deparsable(&derive_input))
