@@ -1,6 +1,6 @@
 [package]
 name = "parst_derive"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2021"
 description = "derive macros for parst"
 license = "MIT OR Apache-2.0"

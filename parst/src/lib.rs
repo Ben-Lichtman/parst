@@ -9,7 +9,7 @@ mod primitives;
 use std::io::Write;
 
 #[cfg(feature = "derive")]
-pub use parst_derive::Parsable;
+pub use parst_derive::{Deparsable, Parsable};
 
 use crate::error::Error;
 
