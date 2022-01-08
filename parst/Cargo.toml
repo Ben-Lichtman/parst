@@ -10,6 +10,7 @@ thiserror = "1.0.30"
 parst_derive = { version = "0.1.9", path = "../parst_derive" , optional = true }
 
 [features]
-default = ["derive", "extra"]
+default = ["derive", "endian", "extra"]
 derive = ["parst_derive"]
+endian = []
 extra = []

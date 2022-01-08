@@ -1,6 +1,9 @@
 #![feature(array_from_fn)]
 
 pub mod error;
+
+#[cfg(feature = "endian")]
+pub mod endian;
 #[cfg(feature = "extra")]
 pub mod extra;
 
