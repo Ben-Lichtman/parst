@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{Data, DataEnum, DataStruct, DeriveInput, Field, Fields};
+use syn::{Data, DataEnum, DataStruct, DeriveInput, Field, Fields, Index};
 
 pub fn generate_expression_deparsable(input: &DeriveInput) -> TokenStream {
 	match &input.data {
@@ -23,7 +23,10 @@ fn field_name((index, field): (usize, &Field)) -> TokenStream {
 fn field_name_borrow((index, field): (usize, &Field)) -> TokenStream {
 	match &field.ident {
 		Some(ident) => quote! { #ident },
-		None => quote! { #index },
+		None => {
+			let index = Index::from(index);
+			quote! { #index }
+		}
 	}
 }
 
