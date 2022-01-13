@@ -32,9 +32,9 @@ impl<L> Deparsable for VarBytes<'_, L>
 where
 	L: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.length.write(&mut w)?;
-		self.slice.write(&mut w)?;
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.length.write(w)?;
+		self.slice.write(w)?;
 		Ok(())
 	}
 }
@@ -47,6 +47,10 @@ pub struct VarStructs<L, T> {
 
 impl<L, T> AsRef<[T]> for VarStructs<L, T> {
 	fn as_ref(&self) -> &[T] { &self.vec }
+}
+
+impl<L, T> AsMut<[T]> for VarStructs<L, T> {
+	fn as_mut(&mut self) -> &mut [T] { &mut self.vec }
 }
 
 impl<'a, C, L, T> Parsable<'a, C> for VarStructs<L, T>
@@ -73,9 +77,9 @@ where
 	L: Deparsable,
 	T: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.length.write(&mut w)?;
-		self.vec.write(&mut w)?;
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.length.write(w)?;
+		self.vec.write(w)?;
 		Ok(())
 	}
 }

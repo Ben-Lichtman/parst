@@ -21,7 +21,7 @@ where
 }
 
 impl Deparsable for LE<u8> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> { w.write_all(&[self.0]) }
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { w.write_all(&[self.0]) }
 }
 
 impl<C> Parsable<'_, C> for LE<i8>
@@ -39,7 +39,7 @@ where
 }
 
 impl Deparsable for LE<i8> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&[self.0 as _])
 	}
 }
@@ -59,7 +59,7 @@ where
 }
 
 impl Deparsable for LE<u16> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_le_bytes())
 	}
 }
@@ -79,7 +79,7 @@ where
 }
 
 impl Deparsable for LE<i16> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_le_bytes())
 	}
 }
@@ -99,7 +99,7 @@ where
 }
 
 impl Deparsable for LE<u32> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_le_bytes())
 	}
 }
@@ -119,7 +119,7 @@ where
 }
 
 impl Deparsable for LE<i32> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_le_bytes())
 	}
 }
@@ -141,7 +141,7 @@ where
 }
 
 impl Deparsable for LE<u64> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_le_bytes())
 	}
 }
@@ -163,7 +163,7 @@ where
 }
 
 impl Deparsable for LE<i64> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_le_bytes())
 	}
 }
@@ -189,7 +189,7 @@ where
 }
 
 impl Deparsable for BE<u8> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> { w.write_all(&[self.0]) }
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { w.write_all(&[self.0]) }
 }
 
 impl<C> Parsable<'_, C> for BE<i8>
@@ -207,7 +207,7 @@ where
 }
 
 impl Deparsable for BE<i8> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&[self.0 as _])
 	}
 }
@@ -227,7 +227,7 @@ where
 }
 
 impl Deparsable for BE<u16> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_be_bytes())
 	}
 }
@@ -247,7 +247,7 @@ where
 }
 
 impl Deparsable for BE<i16> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_be_bytes())
 	}
 }
@@ -267,7 +267,7 @@ where
 }
 
 impl Deparsable for BE<u32> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_be_bytes())
 	}
 }
@@ -287,7 +287,7 @@ where
 }
 
 impl Deparsable for BE<i32> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_be_bytes())
 	}
 }
@@ -309,7 +309,7 @@ where
 }
 
 impl Deparsable for BE<u64> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_be_bytes())
 	}
 }
@@ -331,7 +331,7 @@ where
 }
 
 impl Deparsable for BE<i64> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.0.to_be_bytes())
 	}
 }

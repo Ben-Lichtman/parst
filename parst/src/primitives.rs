@@ -22,7 +22,7 @@ where
 }
 
 impl Deparsable for u8 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> { w.write_all(&[*self]) }
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { w.write_all(&[*self]) }
 }
 
 impl<C> Parsable<'_, C> for i8
@@ -40,7 +40,7 @@ where
 }
 
 impl Deparsable for i8 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&[*self as _])
 	}
 }
@@ -60,7 +60,7 @@ where
 }
 
 impl Deparsable for u16 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.to_ne_bytes())
 	}
 }
@@ -80,7 +80,7 @@ where
 }
 
 impl Deparsable for i16 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.to_ne_bytes())
 	}
 }
@@ -100,7 +100,7 @@ where
 }
 
 impl Deparsable for u32 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.to_ne_bytes())
 	}
 }
@@ -120,7 +120,7 @@ where
 }
 
 impl Deparsable for i32 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.to_ne_bytes())
 	}
 }
@@ -142,7 +142,7 @@ where
 }
 
 impl Deparsable for u64 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.to_ne_bytes())
 	}
 }
@@ -164,7 +164,7 @@ where
 }
 
 impl Deparsable for i64 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.to_ne_bytes())
 	}
 }
@@ -184,7 +184,7 @@ where
 }
 
 impl Deparsable for f32 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.to_ne_bytes())
 	}
 }
@@ -206,7 +206,7 @@ where
 }
 
 impl Deparsable for f64 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(&self.to_ne_bytes())
 	}
 }
@@ -219,7 +219,7 @@ where
 }
 
 impl Deparsable for &[u8] {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> { w.write_all(self) }
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { w.write_all(self) }
 }
 
 impl<'a, C, const N: usize> Parsable<'a, C> for &'a [u8; N]
@@ -235,7 +235,7 @@ where
 }
 
 impl<const N: usize> Deparsable for &[u8; N] {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> { w.write_all(*self) }
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { w.write_all(*self) }
 }
 
 impl<'a, C, T> Parsable<'a, C> for Vec<T>
@@ -257,8 +257,8 @@ impl<T> Deparsable for Vec<T>
 where
 	T: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.iter().try_for_each(|element| element.write(&mut w))
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.iter().try_for_each(|element| element.write(w))
 	}
 }
 
@@ -277,9 +277,7 @@ impl<T> Deparsable for Box<T>
 where
 	T: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.deref().write(&mut w)
-	}
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { self.deref().write(w) }
 }
 
 impl<'a, C, T> Parsable<'a, C> for Option<T>
@@ -299,9 +297,9 @@ impl<T> Deparsable for Option<T>
 where
 	T: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		if let Some(inner) = self {
-			inner.write(&mut w)?;
+			inner.write(w)?;
 		}
 		Ok(())
 	}
@@ -314,11 +312,8 @@ where
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> { Ok((PhantomData, bytes)) }
 }
 
-impl<T> Deparsable for PhantomData<T>
-where
-	T: Deparsable,
-{
-	fn write(&self, _w: impl std::io::Write) -> std::io::Result<()> { Ok(()) }
+impl<T> Deparsable for PhantomData<T> {
+	fn write(&self, _w: &mut impl std::io::Write) -> std::io::Result<()> { Ok(()) }
 }
 
 impl<'a, C, T, const N: usize> Parsable<'a, C> for [T; N]
@@ -340,8 +335,8 @@ impl<T, const N: usize> Deparsable for [T; N]
 where
 	T: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.iter().try_for_each(|element| element.write(&mut w))
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.iter().try_for_each(|element| element.write(w))
 	}
 }
 
@@ -353,7 +348,7 @@ where
 }
 
 impl Deparsable for () {
-	fn write(&self, _w: impl std::io::Write) -> std::io::Result<()> { Ok(()) }
+	fn write(&self, _w: &mut impl std::io::Write) -> std::io::Result<()> { Ok(()) }
 }
 
 impl<'a, Ctx, A> Parsable<'a, Ctx> for (A,)
@@ -371,8 +366,8 @@ impl<A> Deparsable for (A,)
 where
 	A: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.0.write(&mut w)?;
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(w)?;
 		Ok(())
 	}
 }
@@ -395,9 +390,9 @@ where
 	A: Deparsable,
 	B: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.0.write(&mut w)?;
-		self.1.write(&mut w)?;
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(w)?;
+		self.1.write(w)?;
 		Ok(())
 	}
 }
@@ -423,10 +418,10 @@ where
 	B: Deparsable,
 	C: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.0.write(&mut w)?;
-		self.1.write(&mut w)?;
-		self.2.write(&mut w)?;
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(w)?;
+		self.1.write(w)?;
+		self.2.write(w)?;
 		Ok(())
 	}
 }
@@ -455,11 +450,11 @@ where
 	C: Deparsable,
 	D: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.0.write(&mut w)?;
-		self.1.write(&mut w)?;
-		self.2.write(&mut w)?;
-		self.3.write(&mut w)?;
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(w)?;
+		self.1.write(w)?;
+		self.2.write(w)?;
+		self.3.write(w)?;
 		Ok(())
 	}
 }
@@ -491,12 +486,12 @@ where
 	D: Deparsable,
 	E: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.0.write(&mut w)?;
-		self.1.write(&mut w)?;
-		self.2.write(&mut w)?;
-		self.3.write(&mut w)?;
-		self.4.write(&mut w)?;
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(w)?;
+		self.1.write(w)?;
+		self.2.write(w)?;
+		self.3.write(w)?;
+		self.4.write(w)?;
 		Ok(())
 	}
 }
@@ -531,13 +526,13 @@ where
 	E: Deparsable,
 	F: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.0.write(&mut w)?;
-		self.1.write(&mut w)?;
-		self.2.write(&mut w)?;
-		self.3.write(&mut w)?;
-		self.4.write(&mut w)?;
-		self.5.write(&mut w)?;
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(w)?;
+		self.1.write(w)?;
+		self.2.write(w)?;
+		self.3.write(w)?;
+		self.4.write(w)?;
+		self.5.write(w)?;
 		Ok(())
 	}
 }
@@ -575,14 +570,14 @@ where
 	F: Deparsable,
 	G: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.0.write(&mut w)?;
-		self.1.write(&mut w)?;
-		self.2.write(&mut w)?;
-		self.3.write(&mut w)?;
-		self.4.write(&mut w)?;
-		self.5.write(&mut w)?;
-		self.6.write(&mut w)?;
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(w)?;
+		self.1.write(w)?;
+		self.2.write(w)?;
+		self.3.write(w)?;
+		self.4.write(w)?;
+		self.5.write(w)?;
+		self.6.write(w)?;
 		Ok(())
 	}
 }
@@ -623,15 +618,15 @@ where
 	G: Deparsable,
 	H: Deparsable,
 {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		self.0.write(&mut w)?;
-		self.1.write(&mut w)?;
-		self.2.write(&mut w)?;
-		self.3.write(&mut w)?;
-		self.4.write(&mut w)?;
-		self.5.write(&mut w)?;
-		self.6.write(&mut w)?;
-		self.7.write(&mut w)?;
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.0.write(w)?;
+		self.1.write(w)?;
+		self.2.write(w)?;
+		self.3.write(w)?;
+		self.4.write(w)?;
+		self.5.write(w)?;
+		self.6.write(w)?;
+		self.7.write(w)?;
 		Ok(())
 	}
 }

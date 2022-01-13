@@ -26,5 +26,5 @@ where
 }
 
 pub trait Deparsable {
-	fn write(&self, w: impl Write) -> std::io::Result<()>;
+	fn write(&self, w: &mut impl Write) -> std::io::Result<()>;
 }

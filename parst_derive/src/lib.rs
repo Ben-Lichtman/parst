@@ -72,7 +72,7 @@ fn process_input_deparsable(input: &DeriveInput) -> TokenStream {
 	quote! {
 		impl #impl_generics ::parst::Deparsable for #ident #type_generics #where_clause
 		{
-			fn write(&self, mut __w: impl ::std::io::Write) -> ::std::io::Result<()> {
+			fn write(&self, __w: &mut impl ::std::io::Write) -> ::std::io::Result<()> {
 				#![allow(non_snake_case)]
 				#expression
 			}
