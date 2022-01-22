@@ -1,4 +1,5 @@
 use crate::{error::Error, Deparsable, PResult, Parsable};
+use std::borrow::Cow;
 
 fn try_split_at(input: &[u8], at: usize) -> PResult<&[u8]> {
 	(input.len() >= at)
@@ -35,6 +36,44 @@ where
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		self.length.write(w)?;
 		self.slice.write(w)?;
+		Ok(())
+	}
+}
+
+#[derive(Debug, Default)]
+pub struct VarBytesCow<'a, L> {
+	length: L,
+	cow: Cow<'a, [u8]>,
+}
+
+impl<L> AsRef<[u8]> for VarBytesCow<'_, L> {
+	fn as_ref(&self) -> &[u8] { self.cow.as_ref() }
+}
+
+impl<L> AsMut<Vec<u8>> for VarBytesCow<'_, L> {
+	fn as_mut(&mut self) -> &mut Vec<u8> { self.cow.to_mut() }
+}
+
+impl<'a, C, L> Parsable<'a, C> for VarBytesCow<'a, L>
+where
+	C: Copy,
+	L: Copy + Into<u64> + Parsable<'a, ()>,
+{
+	fn read(bytes: &'a [u8], _context: C) -> PResult<Self> {
+		let (length, bytes) = L::read(bytes, ())?;
+		let (slice, bytes) = try_split_at(bytes, length.into() as _)?;
+		let cow = Cow::from(slice);
+		Ok((Self { length, cow }, bytes))
+	}
+}
+
+impl<L> Deparsable for VarBytesCow<'_, L>
+where
+	L: Deparsable,
+{
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.length.write(w)?;
+		self.cow.write(w)?;
 		Ok(())
 	}
 }

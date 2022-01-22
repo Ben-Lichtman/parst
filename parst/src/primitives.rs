@@ -1,5 +1,5 @@
 use crate::{error::Error, Deparsable, PResult, Parsable};
-use std::{array::try_from_fn, marker::PhantomData, ops::Deref};
+use std::{array::try_from_fn, borrow::Cow, marker::PhantomData, ops::Deref};
 
 fn try_split_at(input: &[u8], at: usize) -> PResult<&[u8]> {
 	(input.len() >= at)
@@ -236,6 +236,20 @@ where
 
 impl<const N: usize> Deparsable for &[u8; N] {
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { w.write_all(*self) }
+}
+
+impl<'a, C> Parsable<'a, C> for Cow<'a, [u8]>
+where
+	C: Copy,
+{
+	fn read(bytes: &'a [u8], _context: C) -> PResult<'a, Self> {
+		let cow = Cow::Borrowed(bytes);
+		Ok((cow, &[]))
+	}
+}
+
+impl Deparsable for Cow<'_, [u8]> {
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { w.write_all(self) }
 }
 
 impl<'a, C, T> Parsable<'a, C> for Vec<T>
