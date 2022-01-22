@@ -47,7 +47,7 @@ pub struct VarBytesCow<'a, L> {
 }
 
 impl<L> AsRef<[u8]> for VarBytesCow<'_, L> {
-	fn as_ref(&self) -> &[u8] { self.cow.as_ref() }
+	fn as_ref(&self) -> &[u8] { &self.cow }
 }
 
 impl<L> AsMut<Vec<u8>> for VarBytesCow<'_, L> {
