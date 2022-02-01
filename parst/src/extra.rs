@@ -7,7 +7,7 @@ fn try_split_at(input: &[u8], at: usize) -> PResult<&[u8]> {
 		.ok_or(Error::NotEnoughBytes)
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct VarBytes<'a, L> {
 	length: L,
 	slice: &'a [u8],
@@ -40,7 +40,7 @@ where
 	}
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct VarBytesCow<'a, L> {
 	length: L,
 	cow: Cow<'a, [u8]>,
@@ -78,7 +78,45 @@ where
 	}
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
+pub struct VarBytesOwned<L> {
+	length: L,
+	vec: Vec<u8>,
+}
+
+impl<L> AsRef<[u8]> for VarBytesOwned<L> {
+	fn as_ref(&self) -> &[u8] { &self.vec }
+}
+
+impl<L> AsMut<Vec<u8>> for VarBytesOwned<L> {
+	fn as_mut(&mut self) -> &mut Vec<u8> { &mut self.vec }
+}
+
+impl<'a, C, L> Parsable<'a, C> for VarBytesOwned<L>
+where
+	C: Copy,
+	L: Copy + Into<u64> + Parsable<'a, ()>,
+{
+	fn read(bytes: &'a [u8], _context: C) -> PResult<Self> {
+		let (length, bytes) = L::read(bytes, ())?;
+		let (slice, bytes) = try_split_at(bytes, length.into() as _)?;
+		let vec = Vec::from(slice);
+		Ok((Self { length, vec }, bytes))
+	}
+}
+
+impl<L> Deparsable for VarBytesOwned<L>
+where
+	L: Deparsable,
+{
+	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+		self.length.write(w)?;
+		self.vec.as_slice().write(w)?;
+		Ok(())
+	}
+}
+
+#[derive(Clone, Debug, Default)]
 pub struct VarStructs<L, T> {
 	length: L,
 	vec: Vec<T>,
