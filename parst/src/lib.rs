@@ -18,10 +18,7 @@ use crate::error::Error;
 
 pub type PResult<'a, O, E = Error> = std::result::Result<(O, &'a [u8]), E>;
 
-pub trait Parsable<'a, C>: Sized
-where
-	C: Copy,
-{
+pub trait Parsable<'a, C>: Sized {
 	fn read(bytes: &'a [u8], context: C) -> PResult<'a, Self>;
 }
 

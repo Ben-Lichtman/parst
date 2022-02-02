@@ -8,6 +8,19 @@ fn try_split_at(input: &[u8], at: usize) -> PResult<&[u8]> {
 }
 
 #[derive(Clone, Debug, Default)]
+pub struct Never;
+
+impl<'a, C> Parsable<'a, C> for Never {
+	fn read(_bytes: &'a [u8], _context: C) -> PResult<'a, Self> {
+		panic!("Attempted to parse a never parsable struct")
+	}
+}
+
+impl Deparsable for Never {
+	fn write(&self, _w: &mut impl std::io::Write) -> std::io::Result<()> { Ok(()) }
+}
+
+#[derive(Clone, Debug, Default)]
 pub struct VarBytes<'a, L> {
 	length: L,
 	slice: &'a [u8],
@@ -19,7 +32,6 @@ impl<L> AsRef<[u8]> for VarBytes<'_, L> {
 
 impl<'a, C, L> Parsable<'a, C> for VarBytes<'a, L>
 where
-	C: Copy,
 	L: Copy + Into<u64> + Parsable<'a, ()>,
 {
 	fn read(bytes: &'a [u8], _context: C) -> PResult<Self> {
@@ -56,7 +68,6 @@ impl<L> AsMut<Vec<u8>> for VarBytesCow<'_, L> {
 
 impl<'a, C, L> Parsable<'a, C> for VarBytesCow<'a, L>
 where
-	C: Copy,
 	L: Copy + Into<u64> + Parsable<'a, ()>,
 {
 	fn read(bytes: &'a [u8], _context: C) -> PResult<Self> {
@@ -94,7 +105,6 @@ impl<L> AsMut<Vec<u8>> for VarBytesOwned<L> {
 
 impl<'a, C, L> Parsable<'a, C> for VarBytesOwned<L>
 where
-	C: Copy,
 	L: Copy + Into<u64> + Parsable<'a, ()>,
 {
 	fn read(bytes: &'a [u8], _context: C) -> PResult<Self> {

@@ -7,10 +7,7 @@ fn try_split_at(input: &[u8], at: usize) -> PResult<&[u8]> {
 		.ok_or(Error::NotEnoughBytes)
 }
 
-impl<C> Parsable<'_, C> for u8
-where
-	C: Copy,
-{
+impl<C> Parsable<'_, C> for u8 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, bytes @ ..] => (*a, bytes),
@@ -25,10 +22,7 @@ impl Deparsable for u8 {
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { w.write_all(&[*self]) }
 }
 
-impl<C> Parsable<'_, C> for i8
-where
-	C: Copy,
-{
+impl<C> Parsable<'_, C> for i8 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, bytes @ ..] => (*a as _, bytes),
@@ -45,10 +39,7 @@ impl Deparsable for i8 {
 	}
 }
 
-impl<C> Parsable<'_, C> for u16
-where
-	C: Copy,
-{
+impl<C> Parsable<'_, C> for u16 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, bytes @ ..] => (Self::from_ne_bytes([*a, *b]), bytes),
@@ -65,10 +56,7 @@ impl Deparsable for u16 {
 	}
 }
 
-impl<C> Parsable<'_, C> for i16
-where
-	C: Copy,
-{
+impl<C> Parsable<'_, C> for i16 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, bytes @ ..] => (Self::from_ne_bytes([*a, *b]), bytes),
@@ -85,10 +73,7 @@ impl Deparsable for i16 {
 	}
 }
 
-impl<C> Parsable<'_, C> for u32
-where
-	C: Copy,
-{
+impl<C> Parsable<'_, C> for u32 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, bytes @ ..] => (Self::from_ne_bytes([*a, *b, *c, *d]), bytes),
@@ -105,10 +90,7 @@ impl Deparsable for u32 {
 	}
 }
 
-impl<C> Parsable<'_, C> for i32
-where
-	C: Copy,
-{
+impl<C> Parsable<'_, C> for i32 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, bytes @ ..] => (Self::from_ne_bytes([*a, *b, *c, *d]), bytes),
@@ -125,10 +107,7 @@ impl Deparsable for i32 {
 	}
 }
 
-impl<C> Parsable<'_, C> for u64
-where
-	C: Copy,
-{
+impl<C> Parsable<'_, C> for u64 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, e, f, g, h, bytes @ ..] => {
@@ -147,10 +126,7 @@ impl Deparsable for u64 {
 	}
 }
 
-impl<C> Parsable<'_, C> for i64
-where
-	C: Copy,
-{
+impl<C> Parsable<'_, C> for i64 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, e, f, g, h, bytes @ ..] => {
@@ -169,10 +145,7 @@ impl Deparsable for i64 {
 	}
 }
 
-impl<C> Parsable<'_, C> for f32
-where
-	C: Copy,
-{
+impl<C> Parsable<'_, C> for f32 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, bytes @ ..] => (Self::from_ne_bytes([*a, *b, *c, *d]), bytes),
@@ -189,10 +162,7 @@ impl Deparsable for f32 {
 	}
 }
 
-impl<C> Parsable<'_, C> for f64
-where
-	C: Copy,
-{
+impl<C> Parsable<'_, C> for f64 {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = match bytes {
 			[a, b, c, d, e, f, g, h, bytes @ ..] => {
@@ -211,10 +181,7 @@ impl Deparsable for f64 {
 	}
 }
 
-impl<'a, C> Parsable<'a, C> for &'a [u8]
-where
-	C: Copy,
-{
+impl<'a, C> Parsable<'a, C> for &'a [u8] {
 	fn read(bytes: &'a [u8], _context: C) -> PResult<Self> { Ok((bytes, &[])) }
 }
 
@@ -222,10 +189,7 @@ impl Deparsable for &[u8] {
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { w.write_all(self) }
 }
 
-impl<'a, C, const N: usize> Parsable<'a, C> for &'a [u8; N]
-where
-	C: Copy,
-{
+impl<'a, C, const N: usize> Parsable<'a, C> for &'a [u8; N] {
 	fn read(bytes: &'a [u8], _context: C) -> PResult<Self> {
 		let (head, bytes) = try_split_at(bytes, N)?;
 		// SAFETY: at this point we know that the slice is large enough
@@ -238,10 +202,7 @@ impl<const N: usize> Deparsable for &[u8; N] {
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { w.write_all(*self) }
 }
 
-impl<'a, C> Parsable<'a, C> for Cow<'a, [u8]>
-where
-	C: Copy,
-{
+impl<'a, C> Parsable<'a, C> for Cow<'a, [u8]> {
 	fn read(bytes: &'a [u8], _context: C) -> PResult<'a, Self> {
 		let cow = Cow::Borrowed(bytes);
 		Ok((cow, &[]))
@@ -278,7 +239,6 @@ where
 
 impl<'a, C, T> Parsable<'a, C> for Box<T>
 where
-	C: Copy,
 	T: Parsable<'a, C>,
 {
 	fn read(bytes: &'a [u8], context: C) -> PResult<Self> {
@@ -296,7 +256,6 @@ where
 
 impl<'a, C, T> Parsable<'a, C> for Option<T>
 where
-	C: Copy,
 	T: Parsable<'a, C>,
 {
 	fn read(bytes: &'a [u8], context: C) -> PResult<Self> {
@@ -319,10 +278,7 @@ where
 	}
 }
 
-impl<C, T> Parsable<'_, C> for PhantomData<T>
-where
-	C: Copy,
-{
+impl<C, T> Parsable<'_, C> for PhantomData<T> {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> { Ok((PhantomData, bytes)) }
 }
 
@@ -354,10 +310,7 @@ where
 	}
 }
 
-impl<C> Parsable<'_, C> for ()
-where
-	C: Copy,
-{
+impl<C> Parsable<'_, C> for () {
 	fn read(bytes: &[u8], _context: C) -> PResult<Self> { Ok(((), bytes)) }
 }
 
