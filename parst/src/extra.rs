@@ -26,6 +26,19 @@ pub struct VarBytes<'a, L> {
 	slice: &'a [u8],
 }
 
+impl<'a, L> TryFrom<&'a [u8]> for VarBytes<'a, L>
+where
+	L: TryFrom<usize>,
+{
+	type Error = L::Error;
+
+	fn try_from(input: &'a [u8]) -> Result<Self, Self::Error> {
+		let length = L::try_from(input.len())?;
+		let slice = input;
+		Ok(Self { length, slice })
+	}
+}
+
 impl<L> AsRef<[u8]> for VarBytes<'_, L> {
 	fn as_ref(&self) -> &[u8] { self.slice }
 }
@@ -56,6 +69,32 @@ where
 pub struct VarBytesCow<'a, L> {
 	length: L,
 	cow: Cow<'a, [u8]>,
+}
+
+impl<'a, L> TryFrom<&'a [u8]> for VarBytesCow<'a, L>
+where
+	L: TryFrom<usize>,
+{
+	type Error = L::Error;
+
+	fn try_from(input: &'a [u8]) -> Result<Self, Self::Error> {
+		let length = L::try_from(input.len())?;
+		let cow = Cow::from(input);
+		Ok(Self { length, cow })
+	}
+}
+
+impl<L> TryFrom<Vec<u8>> for VarBytesCow<'_, L>
+where
+	L: TryFrom<usize>,
+{
+	type Error = L::Error;
+
+	fn try_from(input: Vec<u8>) -> Result<Self, Self::Error> {
+		let length = L::try_from(input.len())?;
+		let cow = Cow::from(input);
+		Ok(Self { length, cow })
+	}
 }
 
 impl<L> AsRef<[u8]> for VarBytesCow<'_, L> {
@@ -95,6 +134,19 @@ pub struct VarBytesOwned<L> {
 	vec: Vec<u8>,
 }
 
+impl<L> TryFrom<Vec<u8>> for VarBytesOwned<L>
+where
+	L: TryFrom<usize>,
+{
+	type Error = L::Error;
+
+	fn try_from(input: Vec<u8>) -> Result<Self, Self::Error> {
+		let length = L::try_from(input.len())?;
+		let vec = input;
+		Ok(Self { length, vec })
+	}
+}
+
 impl<L> AsRef<[u8]> for VarBytesOwned<L> {
 	fn as_ref(&self) -> &[u8] { &self.vec }
 }
@@ -126,7 +178,7 @@ where
 	}
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct VarStructs<L, T> {
 	length: L,
 	vec: Vec<T>,
@@ -142,7 +194,7 @@ impl<L, T> AsMut<[T]> for VarStructs<L, T> {
 
 impl<'a, C, L, T> Parsable<'a, C> for VarStructs<L, T>
 where
-	C: Copy,
+	C: Clone,
 	L: Copy + Into<u64> + Parsable<'a, ()>,
 	T: Parsable<'a, C>,
 {
@@ -150,7 +202,7 @@ where
 		let (length, mut bytes) = L::read(bytes, ())?;
 		let vec = (0..length.into())
 			.map(|_| {
-				let (t, tail) = T::read(bytes, context)?;
+				let (t, tail) = T::read(bytes, context.clone())?;
 				bytes = tail;
 				Ok(t)
 			})

@@ -94,6 +94,7 @@ fn generate_enum(input: &DataEnum) -> TokenStream {
 
 			let function_def = quote! {
 				let #fn_name = || -> ::parst::PResult<Self> {
+					let __context = __context.clone();
 					#( #assignments )*
 					#return_expr
 				};

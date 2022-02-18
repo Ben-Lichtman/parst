@@ -94,7 +94,7 @@ fn process_generics_parsable(
 		.unwrap_or_else(|| parse2(quote! { where }).unwrap());
 
 	if generic_context {
-		let context_constraint = parse2::<WherePredicate>(quote! { __CTX: Copy }).unwrap();
+		let context_constraint = parse2::<WherePredicate>(quote! { __CTX: Clone }).unwrap();
 		where_clause.predicates.push(context_constraint);
 	}
 
