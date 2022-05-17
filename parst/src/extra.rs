@@ -22,8 +22,8 @@ impl Deparsable for Never {
 
 #[derive(Clone, Debug, Default)]
 pub struct VarBytes<'a, L> {
-	length: L,
-	slice: &'a [u8],
+	pub length: L,
+	pub slice: &'a [u8],
 }
 
 impl<'a, L> TryFrom<&'a [u8]> for VarBytes<'a, L>
@@ -67,8 +67,8 @@ where
 
 #[derive(Clone, Debug, Default)]
 pub struct VarBytesCow<'a, L> {
-	length: L,
-	cow: Cow<'a, [u8]>,
+	pub length: L,
+	pub cow: Cow<'a, [u8]>,
 }
 
 impl<'a, L> TryFrom<&'a [u8]> for VarBytesCow<'a, L>
@@ -130,8 +130,8 @@ where
 
 #[derive(Clone, Debug, Default)]
 pub struct VarBytesOwned<L> {
-	length: L,
-	vec: Vec<u8>,
+	pub length: L,
+	pub vec: Vec<u8>,
 }
 
 impl<L> TryFrom<Vec<u8>> for VarBytesOwned<L>
@@ -180,8 +180,8 @@ where
 
 #[derive(Clone, Default, Debug)]
 pub struct VarStructs<L, T> {
-	length: L,
-	vec: Vec<T>,
+	pub length: L,
+	pub vec: Vec<T>,
 }
 
 impl<L, T> AsRef<[T]> for VarStructs<L, T> {
