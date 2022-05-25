@@ -1,4 +1,4 @@
-#![feature(array_from_fn)]
+#![feature(array_try_from_fn)]
 
 pub mod error;
 
