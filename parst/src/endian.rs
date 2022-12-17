@@ -1,337 +1,67 @@
-use crate::{error::Error, Deparsable, PResult, Parsable};
+use crate::{helpers::try_split_array, Deparsable, PResultBytes, Parsable};
 
+#[derive(Debug, Clone)]
 pub struct LE<T>(pub T);
 
 impl<T> AsRef<T> for LE<T> {
 	fn as_ref(&self) -> &T { &self.0 }
 }
 
-impl<C> Parsable<'_, C> for LE<u8>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, bytes @ ..] => (*a, bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((LE(head), bytes))
-	}
+impl<T> AsMut<T> for LE<T> {
+	fn as_mut(&mut self) -> &mut T { &mut self.0 }
 }
 
-impl Deparsable for LE<u8> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> { w.write_all(&[self.0]) }
-}
-
-impl<C> Parsable<'_, C> for LE<i8>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, bytes @ ..] => (*a as _, bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((LE(head), bytes))
-	}
-}
-
-impl Deparsable for LE<i8> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&[self.0 as _])
-	}
-}
-
-impl<C> Parsable<'_, C> for LE<u16>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, bytes @ ..] => (u16::from_le_bytes([*a, *b]), bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((LE(head), bytes))
-	}
-}
-
-impl Deparsable for LE<u16> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_le_bytes())
-	}
-}
-
-impl<C> Parsable<'_, C> for LE<i16>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, bytes @ ..] => (i16::from_le_bytes([*a, *b]), bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((LE(head), bytes))
-	}
-}
-
-impl Deparsable for LE<i16> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_le_bytes())
-	}
-}
-
-impl<C> Parsable<'_, C> for LE<u32>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, c, d, bytes @ ..] => (u32::from_le_bytes([*a, *b, *c, *d]), bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((LE(head), bytes))
-	}
-}
-
-impl Deparsable for LE<u32> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_le_bytes())
-	}
-}
-
-impl<C> Parsable<'_, C> for LE<i32>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, c, d, bytes @ ..] => (i32::from_le_bytes([*a, *b, *c, *d]), bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((LE(head), bytes))
-	}
-}
-
-impl Deparsable for LE<i32> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_le_bytes())
-	}
-}
-
-impl<C> Parsable<'_, C> for LE<u64>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, c, d, e, f, g, h, bytes @ ..] => {
-				(u64::from_le_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
-			}
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((LE(head), bytes))
-	}
-}
-
-impl Deparsable for LE<u64> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_le_bytes())
-	}
-}
-
-impl<C> Parsable<'_, C> for LE<i64>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, c, d, e, f, g, h, bytes @ ..] => {
-				(i64::from_le_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
-			}
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((LE(head), bytes))
-	}
-}
-
-impl Deparsable for LE<i64> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_le_bytes())
-	}
-}
-
+#[derive(Debug, Clone)]
 pub struct BE<T>(pub T);
 
 impl<T> AsRef<T> for BE<T> {
 	fn as_ref(&self) -> &T { &self.0 }
 }
 
-impl<C> Parsable<'_, C> for BE<u8>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, bytes @ ..] => (*a, bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((BE(head), bytes))
-	}
+impl<T> AsMut<T> for BE<T> {
+	fn as_mut(&mut self) -> &mut T { &mut self.0 }
 }
 
-impl Deparsable for BE<u8> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> { w.write_all(&[self.0]) }
-}
-
-impl<C> Parsable<'_, C> for BE<i8>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, bytes @ ..] => (*a as _, bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((BE(head), bytes))
-	}
-}
-
-impl Deparsable for BE<i8> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&[self.0 as _])
-	}
-}
-
-impl<C> Parsable<'_, C> for BE<u16>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, bytes @ ..] => (u16::from_be_bytes([*a, *b]), bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((BE(head), bytes))
-	}
-}
-
-impl Deparsable for BE<u16> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_be_bytes())
-	}
-}
-
-impl<C> Parsable<'_, C> for BE<i16>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, bytes @ ..] => (i16::from_be_bytes([*a, *b]), bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((BE(head), bytes))
-	}
-}
-
-impl Deparsable for BE<i16> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_be_bytes())
-	}
-}
-
-impl<C> Parsable<'_, C> for BE<u32>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, c, d, bytes @ ..] => (u32::from_be_bytes([*a, *b, *c, *d]), bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((BE(head), bytes))
-	}
-}
-
-impl Deparsable for BE<u32> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_be_bytes())
-	}
-}
-
-impl<C> Parsable<'_, C> for BE<i32>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, c, d, bytes @ ..] => (i32::from_be_bytes([*a, *b, *c, *d]), bytes),
-			_ => return Err(Error::NotEnoughBytes),
-		};
-
-		Ok((BE(head), bytes))
-	}
-}
-
-impl Deparsable for BE<i32> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_be_bytes())
-	}
-}
-
-impl<C> Parsable<'_, C> for BE<u64>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, c, d, e, f, g, h, bytes @ ..] => {
-				(u64::from_be_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
+macro_rules! impl_prim {
+	($ty:ident $size:literal) => {
+		impl Parsable<'_, [u8]> for LE<$ty> {
+			fn read(source: &[u8], _context: ()) -> PResultBytes<Self> {
+				let (head, source) = try_split_array::<_, $size>(source)?;
+				let prim = $ty::from_le_bytes(*head);
+				Ok((Self(prim), source))
 			}
-			_ => return Err(Error::NotEnoughBytes),
-		};
+		}
 
-		Ok((BE(head), bytes))
-	}
-}
-
-impl Deparsable for BE<u64> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_be_bytes())
-	}
-}
-
-impl<C> Parsable<'_, C> for BE<i64>
-where
-	C: Copy,
-{
-	fn read(bytes: &[u8], _context: C) -> PResult<Self> {
-		let (head, bytes) = match bytes {
-			[a, b, c, d, e, f, g, h, bytes @ ..] => {
-				(i64::from_be_bytes([*a, *b, *c, *d, *e, *f, *g, *h]), bytes)
+		impl Parsable<'_, [u8]> for BE<$ty> {
+			fn read(source: &[u8], _context: ()) -> PResultBytes<Self> {
+				let (head, source) = try_split_array::<_, $size>(source)?;
+				let prim = $ty::from_be_bytes(*head);
+				Ok((Self(prim), source))
 			}
-			_ => return Err(Error::NotEnoughBytes),
-		};
+		}
 
-		Ok((BE(head), bytes))
-	}
+		impl Deparsable for LE<$ty> {
+			fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+				w.write_all(&self.0.to_le_bytes())
+			}
+		}
+
+		impl Deparsable for BE<$ty> {
+			fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+				w.write_all(&self.0.to_be_bytes())
+			}
+		}
+	};
 }
 
-impl Deparsable for BE<i64> {
-	fn write(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
-		w.write_all(&self.0.to_be_bytes())
-	}
+macro_rules! impl_prims {
+	($ty:ident $size:literal) => {
+		impl_prim!($ty $size);
+	};
+	($ty:ident $size:literal $( $other_ty:ident $other_size:literal )*) => {
+		impl_prim!($ty $size);
+        impl_prims!($( $other_ty $other_size )*);
+	};
 }
+
+impl_prims!(u8 1 i8 1 u16 2 i16 2 u32 4 i32 4 u64 8 i64 8 f32 4 f64 8);

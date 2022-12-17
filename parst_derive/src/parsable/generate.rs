@@ -1,12 +1,12 @@
-use crate::parsable::attributes::{parse_inner_attributes, InnerContext};
+use crate::parsable::attributes::{parse_field_attributes, InnerContext, LocalContext};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{Data, DataEnum, DataStruct, DeriveInput, Field, Fields};
+use syn::{Data, DataEnum, DataStruct, DeriveInput, Field, Fields, Pat};
 
-pub fn generate_expression_parsable(input: &DeriveInput) -> TokenStream {
+pub fn generate_expression_parsable(input: &DeriveInput, ctx: &LocalContext) -> TokenStream {
 	match &input.data {
-		Data::Struct(s) => generate_struct(s),
-		Data::Enum(e) => generate_enum(e),
+		Data::Struct(s) => generate_struct(s, ctx),
+		Data::Enum(e) => generate_enum(e, ctx),
 		_ => panic!("Can not derive parsable for union"),
 	}
 }
@@ -21,7 +21,7 @@ fn field_name((index, field): (usize, &Field)) -> TokenStream {
 	}
 }
 
-fn generate_struct(input: &DataStruct) -> TokenStream {
+fn generate_struct(input: &DataStruct, ctx: &LocalContext) -> TokenStream {
 	let field_names = input
 		.fields
 		.iter()
@@ -33,26 +33,27 @@ fn generate_struct(input: &DataStruct) -> TokenStream {
 		.fields
 		.iter()
 		.zip(field_names.iter())
-		.map(|(field, name)| gen_assign(field, name))
+		.map(|(field, name)| gen_assign(field, name, &ctx.ctx_pat))
 		.collect::<Vec<_>>();
 
 	match input.fields {
 		Fields::Named(_) => quote! {
 			#( #assignments )*
-			Ok((Self { #( #field_names ),* }, __bytes))
+			Ok((Self { #( #field_names ),* }, __source))
 		},
 		Fields::Unnamed(_) => quote! {
 			#( #assignments )*
-			Ok((Self ( #( #field_names ),* ), __bytes))
+			Ok((Self ( #( #field_names ),* ), __source))
 		},
 		Fields::Unit => quote! {
 			#( #assignments )*
-			Ok((Self, __bytes))
+			Ok((Self, __source))
 		},
 	}
 }
 
-fn generate_enum(input: &DataEnum) -> TokenStream {
+fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
+	let src_type = &ctx.src_type;
 	let function_calls = input
 		.variants
 		.iter()
@@ -77,23 +78,23 @@ fn generate_enum(input: &DataEnum) -> TokenStream {
 				.fields
 				.iter()
 				.zip(field_names.iter())
-				.map(|(field, name)| gen_assign(field, name))
+				.map(|(field, name)| gen_assign(field, name, &ctx.ctx_pat))
 				.collect::<Vec<_>>();
 
 			let return_expr = match variant.fields {
 				Fields::Named(_) => quote! {
-					Ok((Self::#name { #( #field_names ),* }, __bytes))
+					Ok((Self::#name { #( #field_names ),* }, __source))
 				},
 				Fields::Unnamed(_) => quote! {
-					Ok((Self::#name ( #( #field_names ),* ), __bytes))
+					Ok((Self::#name ( #( #field_names ),* ), __source))
 				},
 				Fields::Unit => quote! {
-					Ok((Self::#name, __bytes))
+					Ok((Self::#name, __source))
 				},
 			};
 
 			let function_def = quote! {
-				let #fn_name = || -> ::parst::PResult<Self> {
+				let #fn_name = || -> ::parst::PResult<Self, #src_type> {
 					#( #assignments )*
 					#return_expr
 				};
@@ -117,34 +118,41 @@ fn generate_enum(input: &DataEnum) -> TokenStream {
 	}
 }
 
-fn gen_assign(Field { attrs, ty, .. }: &Field, name: &TokenStream) -> TokenStream {
-	let inner_attributes = parse_inner_attributes(attrs);
+fn gen_assign(Field { attrs, ty, .. }: &Field, name: &TokenStream, ctx_pat: &Pat) -> TokenStream {
+	let field_attributes = parse_field_attributes(attrs);
 
 	let mut tokens = Vec::new();
 
-	let assignment = match inner_attributes.with_context {
+	let assignment = match field_attributes.context {
 		InnerContext::None => quote! {
-			let (#name, __bytes) = <#ty as ::parst::Parsable<_>>::read(__bytes, ())?;
+			let (#name, __source) = <#ty as ::parst::Parsable<_>>::read(__source, ())?;
 		},
-		InnerContext::Parent => quote! {
-			let (#name, __bytes) = <#ty as ::parst::Parsable<_>>::read(__bytes, __context)?;
+		InnerContext::Inherit => quote! {
+			let (#name, __source) = <#ty as ::parst::Parsable<_>>::read(__source, #ctx_pat)?;
 		},
-		InnerContext::Field(f) => quote! {
-			let (#name, __bytes) = <#ty as ::parst::Parsable<_>>::read(__bytes, #f)?;
+		InnerContext::Expr(e) => quote! {
+			let (#name, __source) = <#ty as ::parst::Parsable<_>>::read(__source, { #e })?;
 		},
 	};
 	tokens.push(assignment);
 
-	if let Some(l) = inner_attributes.assert_eq {
+	if let Some(pat) = field_attributes.matches {
 		tokens.push(quote! {
-			if #name != #l {
+			if !matches!(#name, #pat) {
+				return Err(::parst::error::Error::AssertionFailed);
+			}
+		})
+	}
+	if let Some(e) = field_attributes.assert_eq {
+		tokens.push(quote! {
+			if #name != #e {
 				return Err(::parst::error::Error::AssertionFailed);
 			}
 		});
 	}
-	if let Some(l) = inner_attributes.assert_ne {
+	if let Some(e) = field_attributes.assert_ne {
 		tokens.push(quote! {
-			if #name == #l {
+			if #name == #e {
 				return Err(::parst::error::Error::AssertionFailed);
 			}
 		});

@@ -1,6 +1,6 @@
 [workspace]
-
 members = [
     "parst",
     "parst_derive",
+    "parst_extra",
 ]

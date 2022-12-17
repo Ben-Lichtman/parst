@@ -6,7 +6,7 @@ pub fn generate_expression_deparsable(input: &DeriveInput) -> TokenStream {
 	match &input.data {
 		Data::Struct(s) => generate_struct(s),
 		Data::Enum(e) => generate_enum(e),
-		_ => panic!("Can not derive parsable for union"),
+		_ => panic!("Can not derive deparsable for union"),
 	}
 }
 

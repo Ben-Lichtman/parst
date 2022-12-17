@@ -1,12 +1,13 @@
-#![feature(array_from_fn)]
-
-pub mod error;
+#![feature(split_array)]
+#![feature(array_try_from_fn)]
 
 #[cfg(feature = "endian")]
 pub mod endian;
-#[cfg(feature = "extra")]
-pub mod extra;
+pub mod error;
 
+pub(crate) mod helpers;
+
+mod collections;
 mod primitives;
 
 use std::io::Write;
@@ -14,17 +15,17 @@ use std::io::Write;
 #[cfg(feature = "derive")]
 pub use parst_derive::{Deparsable, Parsable};
 
-use crate::error::Error;
+pub type PResult<'a, O, S, E = crate::error::Error> = std::result::Result<(O, &'a S), E>;
+pub type PResultBytes<'a, O> = PResult<'a, O, [u8]>;
+pub type PResultStr<'a, O> = PResult<'a, O, str>;
 
-pub type PResult<'a, O, E = Error> = std::result::Result<(O, &'a [u8]), E>;
-
-pub trait Parsable<'a, C>: Sized
+pub trait Parsable<'a, Src, Ctx = ()>: Sized
 where
-	C: Copy,
+	Src: ?Sized,
 {
-	fn read(bytes: &'a [u8], context: C) -> PResult<'a, Self>;
+	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src>;
 }
 
 pub trait Deparsable {
-	fn write(&self, w: impl Write) -> std::io::Result<()>;
+	fn write(&self, w: &mut impl Write) -> std::io::Result<()>;
 }

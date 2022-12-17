@@ -1,0 +1,9 @@
+[package]
+name = "parst_extra"
+version = "0.2.0"
+edition = "2021"
+description = "extra structures for parst"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+parst = {  version = "0.2.0", path = "../parst" }
