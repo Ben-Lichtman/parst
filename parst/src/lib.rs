@@ -15,22 +15,27 @@ use std::io::Write;
 #[cfg(feature = "derive")]
 pub use parst_derive::{Deparsable, Parsable};
 
-pub type PResult<'a, O, S, E = crate::error::Error> = std::result::Result<(O, &'a S), E>;
+pub type PResult<'a, O, S, E = crate::error::Error> =
+	std::result::Result<(O, &'a S, usize), (E, usize)>;
 pub type PResultBytes<'a, O> = PResult<'a, O, [u8]>;
 pub type PResultStr<'a, O> = PResult<'a, O, str>;
 
-pub type PResultCounted<'a, O, S, E = crate::error::Error> =
-	std::result::Result<(O, &'a S, usize), E>;
-pub type PResultBytesCounted<'a, O> = PResultCounted<'a, O, [u8]>;
-pub type PResultStrCounted<'a, O> = PResultCounted<'a, O, str>;
+pub type PResultUncounted<'a, O, S, E = crate::error::Error> = std::result::Result<(O, &'a S), E>;
+pub type PResultBytesUncounted<'a, O> = PResult<'a, O, [u8]>;
+pub type PResultStrUncounted<'a, O> = PResult<'a, O, str>;
 
 pub trait Parsable<'a, Src, Ctx = ()>: Sized
 where
 	Src: ?Sized,
 {
-	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src>;
+	fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src>;
 
-	fn read_counted(source: &'a Src, context: Ctx, index: usize) -> PResultCounted<Self, Src>;
+	fn read_uncounted(source: &'a Src, context: Ctx) -> PResultUncounted<Self, Src> {
+		match Self::read(source, context, 0) {
+			Ok((value, src, _)) => Ok((value, src)),
+			Err((e, _)) => Err(e),
+		}
+	}
 }
 
 pub trait Deparsable {

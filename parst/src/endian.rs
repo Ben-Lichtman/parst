@@ -1,4 +1,4 @@
-use crate::{helpers::try_split_array, Deparsable, PResultBytes, PResultBytesCounted, Parsable};
+use crate::{error::Error, helpers::try_split_array, Deparsable, PResultBytes, Parsable};
 
 #[derive(Debug, Clone)]
 pub struct LE<T>(pub T);
@@ -25,36 +25,18 @@ impl<T> AsMut<T> for BE<T> {
 macro_rules! impl_prim {
 	($ty:ident $size:literal) => {
 		impl Parsable<'_, [u8]> for LE<$ty> {
-			fn read(source: &[u8], _context: ()) -> PResultBytes<Self> {
-				let (head, source) = try_split_array::<_, $size>(source)?;
-				let prim = $ty::from_le_bytes(*head);
-				Ok((Self(prim), source))
-			}
-
-			fn read_counted(
-				source: &[u8],
-				_context: (),
-				index: usize,
-			) -> PResultBytesCounted<Self> {
-				let (head, source) = try_split_array::<_, $size>(source)?;
+			fn read(source: &[u8], _context: (), index: usize) -> PResultBytes<Self> {
+				let (head, source) =
+					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, index))?;
 				let prim = $ty::from_le_bytes(*head);
 				Ok((Self(prim), source, index + $size))
 			}
 		}
 
 		impl Parsable<'_, [u8]> for BE<$ty> {
-			fn read(source: &[u8], _context: ()) -> PResultBytes<Self> {
-				let (head, source) = try_split_array::<_, $size>(source)?;
-				let prim = $ty::from_be_bytes(*head);
-				Ok((Self(prim), source))
-			}
-
-			fn read_counted(
-				source: &[u8],
-				_context: (),
-				index: usize,
-			) -> PResultBytesCounted<Self> {
-				let (head, source) = try_split_array::<_, $size>(source)?;
+			fn read(source: &[u8], _context: (), index: usize) -> PResultBytes<Self> {
+				let (head, source) =
+					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, index))?;
 				let prim = $ty::from_be_bytes(*head);
 				Ok((Self(prim), source, index + $size))
 			}

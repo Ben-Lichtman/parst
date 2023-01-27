@@ -1,28 +1,14 @@
+use crate::{Deparsable, PResult, PResultBytes, Parsable};
 use std::{array::try_from_fn, marker::PhantomData, ops::Deref};
-
-use crate::{Deparsable, PResult, PResultBytes, PResultCounted, Parsable};
 
 impl<'a, T, Ctx, const N: usize> Parsable<'a, [u8], Ctx> for [T; N]
 where
 	Ctx: Copy,
 	T: Parsable<'a, [u8], Ctx>,
 {
-	fn read(mut source: &'a [u8], context: Ctx) -> PResultBytes<Self> {
+	fn read(mut source: &'a [u8], context: Ctx, mut index: usize) -> PResultBytes<Self> {
 		try_from_fn(|_| {
-			let (element, this_bytes) = Parsable::read(source, context)?;
-			source = this_bytes;
-			Ok(element)
-		})
-		.map(|array| (array, source))
-	}
-
-	fn read_counted(
-		mut source: &'a [u8],
-		context: Ctx,
-		mut index: usize,
-	) -> PResultCounted<Self, [u8]> {
-		try_from_fn(|_| {
-			let (element, this_bytes, new_index) = Parsable::read_counted(source, context, index)?;
+			let (element, this_bytes, new_index) = Parsable::read(source, context, index)?;
 			source = this_bytes;
 			index = new_index;
 			Ok(element)
@@ -56,16 +42,10 @@ macro_rules! impl_tuple {
                 $T: Parsable<'a, S, Ctx>,
             )+
 		{
-			fn read(source: &'a S, context: Ctx) -> PResult<Self, S> {
-                $(
-                    let ($N, source) = Parsable::read(source, context)?;
-                )+
-                Ok((($( $N, )+), source))
-			}
 
-			fn read_counted(source: &'a S, context: Ctx, index: usize) -> PResultCounted<Self, S> {
+			fn read(source: &'a S, context: Ctx, index: usize) -> PResult<Self, S> {
                 $(
-                    let ($N, source, index) = Parsable::read_counted(source, context, index)?;
+                    let ($N, source, index) = Parsable::read(source, context, index)?;
                 )+
                 Ok((($( $N, )+), source, index))
 			}
@@ -96,24 +76,9 @@ where
 	Ctx: Copy,
 	T: Parsable<'a, Src, Ctx>,
 {
-	fn read(mut source: &'a Src, context: Ctx) -> PResult<Self, Src> {
+	fn read(mut source: &'a Src, context: Ctx, mut index: usize) -> PResult<Self, Src> {
 		let mut v = Vec::new();
-		while let Ok((element, remainder)) = Parsable::read(source, context) {
-			v.push(element);
-			source = remainder;
-		}
-		Ok((v, source))
-	}
-
-	fn read_counted(
-		mut source: &'a Src,
-		context: Ctx,
-		mut index: usize,
-	) -> PResultCounted<Self, Src> {
-		let mut v = Vec::new();
-		while let Ok((element, remainder, new_index)) =
-			Parsable::read_counted(source, context, index)
-		{
+		while let Ok((element, remainder, new_index)) = Parsable::read(source, context, index) {
 			v.push(element);
 			source = remainder;
 			index = new_index;
@@ -139,13 +104,8 @@ where
 	Src: ?Sized,
 	T: Parsable<'a, Src, Ctx>,
 {
-	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src> {
-		let (boxed, source) = Parsable::read(source, context)?;
-		Ok((Box::new(boxed), source))
-	}
-
-	fn read_counted(source: &'a Src, context: Ctx, index: usize) -> PResultCounted<Self, Src> {
-		let (boxed, source, index) = Parsable::read_counted(source, context, index)?;
+	fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src> {
+		let (boxed, source, index) = Parsable::read(source, context, index)?;
 		Ok((Box::new(boxed), source, index))
 	}
 }
@@ -164,15 +124,8 @@ where
 	Src: ?Sized,
 	T: Parsable<'a, Src, Ctx>,
 {
-	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src> {
-		match Parsable::read(source, context) {
-			Ok((inner, source)) => Ok((Some(inner), source)),
-			Err(_) => Ok((None, source)),
-		}
-	}
-
-	fn read_counted(source: &'a Src, context: Ctx, index: usize) -> PResultCounted<Self, Src> {
-		match Parsable::read_counted(source, context, index) {
+	fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src> {
+		match Parsable::read(source, context, index) {
 			Ok((inner, source, index)) => Ok((Some(inner), source, index)),
 			Err(_) => Ok((None, source, index)),
 		}
@@ -195,9 +148,7 @@ impl<Src, Ctx, T> Parsable<'_, Src, Ctx> for PhantomData<T>
 where
 	Src: ?Sized,
 {
-	fn read(source: &Src, _context: Ctx) -> PResult<Self, Src> { Ok((PhantomData, source)) }
-
-	fn read_counted(source: &Src, _context: Ctx, index: usize) -> PResultCounted<Self, Src> {
+	fn read(source: &Src, _context: Ctx, index: usize) -> PResult<Self, Src> {
 		Ok((PhantomData, source, index))
 	}
 }

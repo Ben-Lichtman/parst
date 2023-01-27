@@ -1,9 +1,7 @@
 use parst::{error::Error, Deparsable, PResult, PResultBytes, Parsable};
 
-pub fn try_split_at<S>(input: &[S], at: usize) -> PResult<&[S], [S]> {
-	(input.len() >= at)
-		.then(|| input.split_at(at))
-		.ok_or(Error::NotEnoughBytes)
+pub fn try_split_at<S>(input: &[S], at: usize) -> Option<(&[S], &[S])> {
+	(input.len() >= at).then(|| input.split_at(at))
 }
 
 #[derive(Debug, Clone, Default)]
@@ -20,20 +18,10 @@ impl<'a, L> Parsable<'a, [u8]> for VarBytes<'a, L>
 where
 	L: Copy + Into<u64> + Parsable<'a, [u8], ()>,
 {
-	fn read(source: &'a [u8], _context: ()) -> PResultBytes<Self> {
-		let (length, source) = L::read(source, ())?;
-		let (slice, source) = try_split_at(source, length.into() as _)?;
-
-		Ok((Self { length, slice }, source))
-	}
-
-	fn read_counted(
-		source: &'a [u8],
-		_context: (),
-		index: usize,
-	) -> parst::PResultCounted<Self, [u8]> {
-		let (length, source, index) = L::read_counted(source, (), index)?;
-		let (slice, source) = try_split_at(source, length.into() as _)?;
+	fn read(source: &'a [u8], _context: (), index: usize) -> PResultBytes<Self> {
+		let (length, source, index) = L::read(source, (), index)?;
+		let (slice, source) =
+			try_split_at(source, length.into() as _).ok_or((Error::NotEnoughBytes, index))?;
 
 		Ok((
 			Self { length, slice },
@@ -70,24 +58,11 @@ where
 	L: Copy + Into<u64> + Parsable<'a, S, ()>,
 	T: Parsable<'a, S, Ctx>,
 {
-	fn read(source: &'a S, context: Ctx) -> PResult<Self, S> {
-		let (length, mut source) = L::read(source, ())?;
+	fn read(source: &'a S, context: Ctx, index: usize) -> PResult<Self, S> {
+		let (length, mut source, mut index) = L::read(source, (), index)?;
 		let vec = (0..length.into())
 			.map(|_| {
-				let (t, tail) = T::read(source, context)?;
-				source = tail;
-				Ok(t)
-			})
-			.collect::<Result<Vec<_>, _>>()?;
-
-		Ok((Self { length, vec }, source))
-	}
-
-	fn read_counted(source: &'a S, context: Ctx, index: usize) -> parst::PResultCounted<Self, S> {
-		let (length, mut source, mut index) = L::read_counted(source, (), index)?;
-		let vec = (0..length.into())
-			.map(|_| {
-				let (t, tail, index_new) = T::read_counted(source, context, index)?;
+				let (t, tail, index_new) = T::read(source, context, index)?;
 				source = tail;
 				index = index_new;
 				Ok(t)
