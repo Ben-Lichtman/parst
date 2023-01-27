@@ -4,7 +4,7 @@ mod parsable;
 
 use crate::{
 	deparsable::generate::generate_expression_deparsable,
-	parsable::generate::generate_expression_parsable,
+	parsable::generate::{generate_expression_parsable, generate_expression_parsable_counted},
 };
 use helpers::combine_generics;
 use parsable::attributes::{LocalContext, OuterAttributes};
@@ -29,6 +29,7 @@ fn process_input_parsable(input: &DeriveInput) -> TokenStream {
 	let local_context = LocalContext::from(outer_attributes);
 
 	let expression = generate_expression_parsable(input, &local_context);
+	let expression_counted = generate_expression_parsable_counted(input, &local_context);
 
 	let mut combined_generics = combine_generics(generics, &local_context.new_generics());
 	let src_lifetime = local_context.src_lifetime;
@@ -49,6 +50,11 @@ fn process_input_parsable(input: &DeriveInput) -> TokenStream {
 			fn read(__source: &#src_lifetime #src_type, #ctx_pat: #ctx_type) -> ::parst::PResult<Self, #src_type> {
 				#![allow(non_snake_case)]
 				#expression
+			}
+
+			fn read_counted(__source: &#src_lifetime #src_type, #ctx_pat: #ctx_type, __index: usize) -> ::parst::PResultCounted<Self, #src_type> {
+				#![allow(non_snake_case)]
+				#expression_counted
 			}
 		}
 	}

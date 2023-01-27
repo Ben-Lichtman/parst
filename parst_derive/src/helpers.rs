@@ -1,8 +1,10 @@
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
 use std::collections::HashSet;
 use syn::{
 	punctuated::Punctuated,
 	token::{Comma, Where},
-	GenericParam, Generics, WhereClause, WherePredicate,
+	Field, GenericParam, Generics, WhereClause, WherePredicate,
 };
 
 pub fn make_where_clause(i: impl Iterator<Item = WherePredicate>) -> Option<WhereClause> {
@@ -48,4 +50,14 @@ pub fn combine_generics(a: &Generics, b: &Generics) -> Generics {
 	c.params.extend(ordered);
 	c.where_clause = combine_where_clauses(&a.where_clause, &b.where_clause);
 	c
+}
+
+pub fn field_name((index, field): (usize, &Field)) -> TokenStream {
+	match &field.ident {
+		Some(ident) => quote! { #ident },
+		None => {
+			let ident = format_ident!("__field_{}", index);
+			quote! { #ident }
+		}
+	}
 }

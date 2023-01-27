@@ -1,4 +1,4 @@
-use crate::{helpers::try_split_array, Deparsable, PResultBytes, Parsable};
+use crate::{helpers::try_split_array, Deparsable, PResultBytes, PResultBytesCounted, Parsable};
 
 #[derive(Debug, Clone)]
 pub struct LE<T>(pub T);
@@ -30,6 +30,16 @@ macro_rules! impl_prim {
 				let prim = $ty::from_le_bytes(*head);
 				Ok((Self(prim), source))
 			}
+
+			fn read_counted(
+				source: &[u8],
+				_context: (),
+				index: usize,
+			) -> PResultBytesCounted<Self> {
+				let (head, source) = try_split_array::<_, $size>(source)?;
+				let prim = $ty::from_le_bytes(*head);
+				Ok((Self(prim), source, index + $size))
+			}
 		}
 
 		impl Parsable<'_, [u8]> for BE<$ty> {
@@ -37,6 +47,16 @@ macro_rules! impl_prim {
 				let (head, source) = try_split_array::<_, $size>(source)?;
 				let prim = $ty::from_be_bytes(*head);
 				Ok((Self(prim), source))
+			}
+
+			fn read_counted(
+				source: &[u8],
+				_context: (),
+				index: usize,
+			) -> PResultBytesCounted<Self> {
+				let (head, source) = try_split_array::<_, $size>(source)?;
+				let prim = $ty::from_be_bytes(*head);
+				Ok((Self(prim), source, index + $size))
 			}
 		}
 

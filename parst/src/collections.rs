@@ -1,6 +1,6 @@
 use std::{array::try_from_fn, marker::PhantomData, ops::Deref};
 
-use crate::{Deparsable, PResult, PResultBytes, Parsable};
+use crate::{Deparsable, PResult, PResultBytes, PResultCounted, Parsable};
 
 impl<'a, T, Ctx, const N: usize> Parsable<'a, [u8], Ctx> for [T; N]
 where
@@ -14,6 +14,20 @@ where
 			Ok(element)
 		})
 		.map(|array| (array, source))
+	}
+
+	fn read_counted(
+		mut source: &'a [u8],
+		context: Ctx,
+		mut index: usize,
+	) -> PResultCounted<Self, [u8]> {
+		try_from_fn(|_| {
+			let (element, this_bytes, new_index) = Parsable::read_counted(source, context, index)?;
+			source = this_bytes;
+			index = new_index;
+			Ok(element)
+		})
+		.map(|array| (array, source, index))
 	}
 }
 
@@ -47,6 +61,13 @@ macro_rules! impl_tuple {
                     let ($N, source) = Parsable::read(source, context)?;
                 )+
                 Ok((($( $N, )+), source))
+			}
+
+			fn read_counted(source: &'a S, context: Ctx, index: usize) -> PResultCounted<Self, S> {
+                $(
+                    let ($N, source, index) = Parsable::read_counted(source, context, index)?;
+                )+
+                Ok((($( $N, )+), source, index))
 			}
 		}
 
@@ -83,6 +104,22 @@ where
 		}
 		Ok((v, source))
 	}
+
+	fn read_counted(
+		mut source: &'a Src,
+		context: Ctx,
+		mut index: usize,
+	) -> PResultCounted<Self, Src> {
+		let mut v = Vec::new();
+		while let Ok((element, remainder, new_index)) =
+			Parsable::read_counted(source, context, index)
+		{
+			v.push(element);
+			source = remainder;
+			index = new_index;
+		}
+		Ok((v, source, index))
+	}
 }
 
 impl<T> Deparsable for Vec<T>
@@ -106,6 +143,11 @@ where
 		let (boxed, source) = Parsable::read(source, context)?;
 		Ok((Box::new(boxed), source))
 	}
+
+	fn read_counted(source: &'a Src, context: Ctx, index: usize) -> PResultCounted<Self, Src> {
+		let (boxed, source, index) = Parsable::read_counted(source, context, index)?;
+		Ok((Box::new(boxed), source, index))
+	}
 }
 
 impl<T> Deparsable for Box<T>
@@ -128,6 +170,13 @@ where
 			Err(_) => Ok((None, source)),
 		}
 	}
+
+	fn read_counted(source: &'a Src, context: Ctx, index: usize) -> PResultCounted<Self, Src> {
+		match Parsable::read_counted(source, context, index) {
+			Ok((inner, source, index)) => Ok((Some(inner), source, index)),
+			Err(_) => Ok((None, source, index)),
+		}
+	}
 }
 
 impl<T> Deparsable for Option<T>
@@ -147,4 +196,8 @@ where
 	Src: ?Sized,
 {
 	fn read(source: &Src, _context: Ctx) -> PResult<Self, Src> { Ok((PhantomData, source)) }
+
+	fn read_counted(source: &Src, _context: Ctx, index: usize) -> PResultCounted<Self, Src> {
+		Ok((PhantomData, source, index))
+	}
 }

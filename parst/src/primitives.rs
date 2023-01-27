@@ -1,7 +1,14 @@
-use crate::{helpers::try_split_array, Deparsable, PResult, PResultBytes, PResultStr, Parsable};
+use crate::{
+	helpers::try_split_array, Deparsable, PResult, PResultBytes, PResultBytesCounted,
+	PResultCounted, PResultStr, Parsable,
+};
 
 impl<'a, Src> Parsable<'a, Src> for () {
 	fn read(source: &'a Src, _context: ()) -> PResult<Self, Src> { Ok(((), source)) }
+
+	fn read_counted(source: &'a Src, _context: (), index: usize) -> PResultCounted<Self, Src> {
+		Ok(((), source, index))
+	}
 }
 
 impl Deparsable for () {
@@ -10,6 +17,10 @@ impl Deparsable for () {
 
 impl<'a> Parsable<'a, [u8]> for &'a [u8] {
 	fn read(source: &'a [u8], _context: ()) -> PResultBytes<'a, Self> { Ok((source, &[])) }
+
+	fn read_counted(source: &'a [u8], _context: (), index: usize) -> PResultCounted<Self, [u8]> {
+		Ok((source, &[], index))
+	}
 }
 
 impl Deparsable for &[u8] {
@@ -17,10 +28,10 @@ impl Deparsable for &[u8] {
 }
 
 impl<'a> Parsable<'a, str> for &'a str {
-	fn read(source: &'a str, _context: ()) -> PResultStr<'_, Self> {
-		let len = source.len();
-		let (output, remaining) = source.split_at(len);
-		Ok((output, remaining))
+	fn read(source: &'a str, _context: ()) -> PResultStr<'_, Self> { Ok((source, "")) }
+
+	fn read_counted(source: &'a str, _context: (), index: usize) -> PResultCounted<Self, str> {
+		Ok((source, "", index))
 	}
 }
 
@@ -34,6 +45,11 @@ impl<'a, const N: usize> Parsable<'a, [u8]> for &'a [u8; N] {
 	fn read(source: &'a [u8], _context: ()) -> PResultBytes<Self> {
 		let (output, source) = try_split_array(source)?;
 		Ok((output, source))
+	}
+
+	fn read_counted(source: &'a [u8], _context: (), index: usize) -> PResultCounted<Self, [u8]> {
+		let (output, source) = try_split_array(source)?;
+		Ok((output, source, index + N))
 	}
 }
 
@@ -50,6 +66,16 @@ macro_rules! impl_prim {
 				let (head, source) = try_split_array::<_, $size>(source)?;
 				let prim = $ty::from_ne_bytes(*head);
 				Ok((prim, source))
+			}
+
+			fn read_counted(
+				source: &[u8],
+				_context: (),
+				index: usize,
+			) -> PResultBytesCounted<Self> {
+				let (head, source) = try_split_array::<_, $size>(source)?;
+				let prim = $ty::from_ne_bytes(*head);
+				Ok((prim, source, index + $size))
 			}
 		}
 

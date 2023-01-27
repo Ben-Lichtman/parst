@@ -1,4 +1,7 @@
-use crate::parsable::attributes::{parse_field_attributes, InnerContext, LocalContext};
+use crate::{
+	helpers::field_name,
+	parsable::attributes::{parse_field_attributes, InnerContext, LocalContext},
+};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Data, DataEnum, DataStruct, DeriveInput, Field, Fields, Pat};
@@ -11,13 +14,14 @@ pub fn generate_expression_parsable(input: &DeriveInput, ctx: &LocalContext) -> 
 	}
 }
 
-fn field_name((index, field): (usize, &Field)) -> TokenStream {
-	match &field.ident {
-		Some(ident) => quote! { #ident },
-		None => {
-			let ident = format_ident!("__field_{}", index);
-			quote! { #ident }
-		}
+pub fn generate_expression_parsable_counted(
+	input: &DeriveInput,
+	ctx: &LocalContext,
+) -> TokenStream {
+	match &input.data {
+		Data::Struct(s) => generate_struct_counted(s, ctx),
+		Data::Enum(e) => generate_enum_counted(e, ctx),
+		_ => panic!("Can not derive parsable for union"),
 	}
 }
 
@@ -48,6 +52,37 @@ fn generate_struct(input: &DataStruct, ctx: &LocalContext) -> TokenStream {
 		Fields::Unit => quote! {
 			#( #assignments )*
 			Ok((Self, __source))
+		},
+	}
+}
+
+fn generate_struct_counted(input: &DataStruct, ctx: &LocalContext) -> TokenStream {
+	let field_names = input
+		.fields
+		.iter()
+		.enumerate()
+		.map(field_name)
+		.collect::<Vec<_>>();
+
+	let assignments = input
+		.fields
+		.iter()
+		.zip(field_names.iter())
+		.map(|(field, name)| gen_assign_counted(field, name, &ctx.ctx_pat))
+		.collect::<Vec<_>>();
+
+	match input.fields {
+		Fields::Named(_) => quote! {
+			#( #assignments )*
+			Ok((Self { #( #field_names ),* }, __source, __index))
+		},
+		Fields::Unnamed(_) => quote! {
+			#( #assignments )*
+			Ok((Self ( #( #field_names ),* ), __source, __index))
+		},
+		Fields::Unit => quote! {
+			#( #assignments )*
+			Ok((Self, __source, __index))
 		},
 	}
 }
@@ -118,6 +153,72 @@ fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
 	}
 }
 
+fn generate_enum_counted(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
+	let src_type = &ctx.src_type;
+	let function_calls = input
+		.variants
+		.iter()
+		.map(|variant| {
+			let field_names = variant
+				.fields
+				.iter()
+				.enumerate()
+				.map(|(n, field)| match &field.ident {
+					Some(ident) => quote! { #ident },
+					None => {
+						let ident = format_ident!("__field_{}", n);
+						quote! { #ident }
+					}
+				})
+				.collect::<Vec<_>>();
+
+			let name = &variant.ident;
+			let fn_name = format_ident!("decode_{}", name);
+
+			let assignments = variant
+				.fields
+				.iter()
+				.zip(field_names.iter())
+				.map(|(field, name)| gen_assign_counted(field, name, &ctx.ctx_pat))
+				.collect::<Vec<_>>();
+
+			let return_expr = match variant.fields {
+				Fields::Named(_) => quote! {
+					Ok((Self::#name { #( #field_names ),* }, __source, __index))
+				},
+				Fields::Unnamed(_) => quote! {
+					Ok((Self::#name ( #( #field_names ),* ), __source, __index))
+				},
+				Fields::Unit => quote! {
+					Ok((Self::#name, __source, __index))
+				},
+			};
+
+			let function_def = quote! {
+				let #fn_name = || -> ::parst::PResultCounted<Self, #src_type> {
+					#( #assignments )*
+					#return_expr
+				};
+			};
+
+			let function_call = quote! {
+				if let Ok(x) = #fn_name() {
+					return Ok(x);
+				}
+			};
+			quote! {
+				#function_def
+				#function_call
+			}
+		})
+		.collect::<Vec<_>>();
+
+	quote! {
+		#( #function_calls )*
+		Err(::parst::error::Error::InvalidInput)
+	}
+}
+
 fn gen_assign(Field { attrs, ty, .. }: &Field, name: &TokenStream, ctx_pat: &Pat) -> TokenStream {
 	let field_attributes = parse_field_attributes(attrs);
 
@@ -132,6 +233,55 @@ fn gen_assign(Field { attrs, ty, .. }: &Field, name: &TokenStream, ctx_pat: &Pat
 		},
 		InnerContext::Expr(e) => quote! {
 			let (#name, __source) = <#ty as ::parst::Parsable<_>>::read(__source, { #e })?;
+		},
+	};
+	tokens.push(assignment);
+
+	if let Some(pat) = field_attributes.matches {
+		tokens.push(quote! {
+			if !matches!(#name, #pat) {
+				return Err(::parst::error::Error::AssertionFailed);
+			}
+		})
+	}
+	if let Some(e) = field_attributes.assert_eq {
+		tokens.push(quote! {
+			if #name != #e {
+				return Err(::parst::error::Error::AssertionFailed);
+			}
+		});
+	}
+	if let Some(e) = field_attributes.assert_ne {
+		tokens.push(quote! {
+			if #name == #e {
+				return Err(::parst::error::Error::AssertionFailed);
+			}
+		});
+	}
+
+	quote! {
+		#( #tokens )*
+	}
+}
+
+fn gen_assign_counted(
+	Field { attrs, ty, .. }: &Field,
+	name: &TokenStream,
+	ctx_pat: &Pat,
+) -> TokenStream {
+	let field_attributes = parse_field_attributes(attrs);
+
+	let mut tokens = Vec::new();
+
+	let assignment = match field_attributes.context {
+		InnerContext::None => quote! {
+			let (#name, __source, __index) = <#ty as ::parst::Parsable<_>>::read_counted(__source, (), __index)?;
+		},
+		InnerContext::Inherit => quote! {
+			let (#name, __source, __index) = <#ty as ::parst::Parsable<_>>::read_counted(__source, #ctx_pat, __index)?;
+		},
+		InnerContext::Expr(e) => quote! {
+			let (#name, __source, __index) = <#ty as ::parst::Parsable<_>>::read_counted(__source, { #e }, __index)?;
 		},
 	};
 	tokens.push(assignment);

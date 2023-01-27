@@ -19,11 +19,18 @@ pub type PResult<'a, O, S, E = crate::error::Error> = std::result::Result<(O, &'
 pub type PResultBytes<'a, O> = PResult<'a, O, [u8]>;
 pub type PResultStr<'a, O> = PResult<'a, O, str>;
 
+pub type PResultCounted<'a, O, S, E = crate::error::Error> =
+	std::result::Result<(O, &'a S, usize), E>;
+pub type PResultBytesCounted<'a, O> = PResultCounted<'a, O, [u8]>;
+pub type PResultStrCounted<'a, O> = PResultCounted<'a, O, str>;
+
 pub trait Parsable<'a, Src, Ctx = ()>: Sized
 where
 	Src: ?Sized,
 {
 	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src>;
+
+	fn read_counted(source: &'a Src, context: Ctx, index: usize) -> PResultCounted<Self, Src>;
 }
 
 pub trait Deparsable {
