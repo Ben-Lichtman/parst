@@ -36,7 +36,7 @@ fn generate_struct(input: &DataStruct) -> TokenStream {
 		.collect::<Vec<_>>();
 
 	let writes = quote! {
-		#(::parst::Deparsable::write(&self.#field_names, &mut __w)?;)*
+		#(::parst::Deparsable::write(&self.#field_names, &mut *__w)?;)*
 	};
 
 	quote! {
@@ -67,7 +67,7 @@ fn generate_enum(input: &DataEnum) -> TokenStream {
 
 			quote! {
 				Self::#name #pattern => {
-					#(::parst::Deparsable::write(#field_names, &mut __w)?;)*
+					#(::parst::Deparsable::write(#field_names, &mut *__w)?;)*
 				}
 			}
 		})
