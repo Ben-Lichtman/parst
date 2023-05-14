@@ -8,14 +8,13 @@ where
 	T: Parsable<'a, Src, Ctx>,
 {
 	#[inline]
-	fn read(mut source: &'a Src, context: Ctx, mut index: usize) -> PResult<Self, Src> {
+	fn read(mut source: &'a Src, context: Ctx) -> PResult<Self, Src> {
 		try_from_fn(|_| {
-			let (element, this_bytes, new_index) = Parsable::read(source, context, index)?;
+			let (element, this_bytes) = Parsable::read(source, context)?;
 			source = this_bytes;
-			index = new_index;
 			Ok(element)
 		})
-		.map(|array| (array, source, index))
+		.map(|array| (array, source))
 	}
 }
 
@@ -47,11 +46,11 @@ macro_rules! impl_tuple {
             )+
 		{
 			#[inline]
-			fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src> {
+			fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src> {
                 $(
-                    let ($N, source, index) = Parsable::read(source, context, index)?;
+                    let ($N, source) = Parsable::read(source, context)?;
                 )+
-                Ok((($( $N, )+), source, index))
+                Ok((($( $N, )+), source))
 			}
 		}
 
@@ -82,14 +81,13 @@ where
 	T: Parsable<'a, Src, Ctx>,
 {
 	#[inline]
-	fn read(mut source: &'a Src, context: Ctx, mut index: usize) -> PResult<Self, Src> {
+	fn read(mut source: &'a Src, context: Ctx) -> PResult<Self, Src> {
 		let mut v = Vec::new();
-		while let Ok((element, remainder, new_index)) = Parsable::read(source, context, index) {
+		while let Ok((element, remainder)) = Parsable::read(source, context) {
 			v.push(element);
 			source = remainder;
-			index = new_index;
 		}
-		Ok((v, source, index))
+		Ok((v, source))
 	}
 }
 
@@ -112,9 +110,9 @@ where
 	T: Parsable<'a, Src, Ctx>,
 {
 	#[inline]
-	fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src> {
-		let (boxed, source, index) = Parsable::read(source, context, index)?;
-		Ok((Box::new(boxed), source, index))
+	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src> {
+		let (boxed, source) = Parsable::read(source, context)?;
+		Ok((Box::new(boxed), source))
 	}
 }
 
@@ -134,10 +132,10 @@ where
 	T: Parsable<'a, Src, Ctx>,
 {
 	#[inline]
-	fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src> {
-		match Parsable::read(source, context, index) {
-			Ok((inner, source, index)) => Ok((Some(inner), source, index)),
-			Err(_) => Ok((None, source, index)),
+	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src> {
+		match Parsable::read(source, context) {
+			Ok((inner, source)) => Ok((Some(inner), source)),
+			Err(_) => Ok((None, source)),
 		}
 	}
 }
@@ -160,7 +158,5 @@ where
 	Src: ?Sized,
 {
 	#[inline]
-	fn read(source: &Src, _context: Ctx, index: usize) -> PResult<Self, Src> {
-		Ok((PhantomData, source, index))
-	}
+	fn read(source: &Src, _context: Ctx) -> PResult<Self, Src> { Ok((PhantomData, source)) }
 }

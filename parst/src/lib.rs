@@ -15,28 +15,15 @@ use std::io::Write;
 #[cfg(feature = "derive")]
 pub use parst_derive::{Deparsable, Parsable};
 
-pub type PResult<'a, O, S, E = crate::error::Error> =
-	std::result::Result<(O, &'a S, usize), (E, usize)>;
+pub type PResult<'a, O, S, E = crate::error::Error> = std::result::Result<(O, &'a S), (E, &'a S)>;
 pub type PResultBytes<'a, O> = PResult<'a, O, [u8]>;
 pub type PResultStr<'a, O> = PResult<'a, O, str>;
-
-pub type PResultUncounted<'a, O, S, E = crate::error::Error> = std::result::Result<(O, &'a S), E>;
-pub type PResultBytesUncounted<'a, O> = PResult<'a, O, [u8]>;
-pub type PResultStrUncounted<'a, O> = PResult<'a, O, str>;
 
 pub trait Parsable<'a, Src, Ctx = ()>: Sized
 where
 	Src: ?Sized,
 {
-	fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src>;
-
-	#[inline]
-	fn read_uncounted(source: &'a Src, context: Ctx) -> PResultUncounted<Self, Src> {
-		match Self::read(source, context, 0) {
-			Ok((value, src, _)) => Ok((value, src)),
-			Err((e, _)) => Err(e),
-		}
-	}
+	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src>;
 }
 
 pub trait Deparsable {

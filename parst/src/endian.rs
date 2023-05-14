@@ -26,21 +26,21 @@ macro_rules! impl_prim {
 	($ty:ident $size:literal) => {
 		impl Parsable<'_, [u8]> for LE<$ty> {
 			#[inline]
-			fn read(source: &[u8], _context: (), index: usize) -> PResultBytes<Self> {
+			fn read(source: &[u8], _context: ()) -> PResultBytes<Self> {
 				let (head, source) =
-					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, index))?;
+					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, source))?;
 				let prim = $ty::from_le_bytes(*head);
-				Ok((Self(prim), source, index + $size))
+				Ok((Self(prim), source))
 			}
 		}
 
 		impl Parsable<'_, [u8]> for BE<$ty> {
 			#[inline]
-			fn read(source: &[u8], _context: (), index: usize) -> PResultBytes<Self> {
+			fn read(source: &[u8], _context: ()) -> PResultBytes<Self> {
 				let (head, source) =
-					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, index))?;
+					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, source))?;
 				let prim = $ty::from_be_bytes(*head);
-				Ok((Self(prim), source, index + $size))
+				Ok((Self(prim), source))
 			}
 		}
 

@@ -9,8 +9,8 @@ impl<'a, Src, Ctx> Parsable<'a, Src, Ctx> for Never
 where
 	Src: ?Sized,
 {
-	fn read(_source: &'a Src, _context: Ctx, index: usize) -> parst::PResult<Self, Src> {
-		Err((parst::error::Error::InvalidInput, index))
+	fn read(source: &'a Src, _context: Ctx) -> parst::PResult<Self, Src> {
+		Err((parst::error::Error::InvalidInput, source))
 	}
 }
 

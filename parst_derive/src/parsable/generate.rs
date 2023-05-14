@@ -32,15 +32,15 @@ fn generate_struct(input: &DataStruct, ctx: &LocalContext) -> TokenStream {
 	match input.fields {
 		Fields::Named(_) => quote! {
 			#( #assignments )*
-			Ok((Self { #( #field_names ),* }, __source, __index))
+			Ok((Self { #( #field_names ),* }, __source))
 		},
 		Fields::Unnamed(_) => quote! {
 			#( #assignments )*
-			Ok((Self ( #( #field_names ),* ), __source, __index))
+			Ok((Self ( #( #field_names ),* ), __source))
 		},
 		Fields::Unit => quote! {
 			#( #assignments )*
-			Ok((Self, __source, __index))
+			Ok((Self, __source))
 		},
 	}
 }
@@ -76,13 +76,13 @@ fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
 
 			let return_expr = match variant.fields {
 				Fields::Named(_) => quote! {
-					Ok((Self::#name { #( #field_names ),* }, __source, __index))
+					Ok((Self::#name { #( #field_names ),* }, __source))
 				},
 				Fields::Unnamed(_) => quote! {
-					Ok((Self::#name ( #( #field_names ),* ), __source, __index))
+					Ok((Self::#name ( #( #field_names ),* ), __source))
 				},
 				Fields::Unit => quote! {
-					Ok((Self::#name, __source, __index))
+					Ok((Self::#name, __source))
 				},
 			};
 
@@ -107,7 +107,7 @@ fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
 
 	quote! {
 		#( #function_calls )*
-		Err((::parst::error::Error::InvalidInput, __index))
+		Err((::parst::error::Error::InvalidInput, __source))
 	}
 }
 
@@ -118,13 +118,13 @@ fn gen_assign(Field { attrs, ty, .. }: &Field, name: &TokenStream, ctx_pat: &Pat
 
 	let assignment = match field_attributes.context {
 		InnerContext::None => quote! {
-			let (#name, __source, __index) = <#ty as ::parst::Parsable<_>>::read(__source, (), __index)?;
+			let (#name, __source) = <#ty as ::parst::Parsable<_>>::read(__source, ())?;
 		},
 		InnerContext::Inherit => quote! {
-			let (#name, __source, __index) = <#ty as ::parst::Parsable<_>>::read(__source, #ctx_pat, __index)?;
+			let (#name, __source) = <#ty as ::parst::Parsable<_>>::read(__source, #ctx_pat)?;
 		},
 		InnerContext::Expr(e) => quote! {
-			let (#name, __source, __index) = <#ty as ::parst::Parsable<_>>::read(__source, { #e }, __index)?;
+			let (#name, __source) = <#ty as ::parst::Parsable<_>>::read(__source, { #e })?;
 		},
 	};
 	tokens.push(assignment);
@@ -132,21 +132,21 @@ fn gen_assign(Field { attrs, ty, .. }: &Field, name: &TokenStream, ctx_pat: &Pat
 	if let Some(pat) = field_attributes.matches {
 		tokens.push(quote! {
 			if !matches!(#name, #pat) {
-				return Err((::parst::error::Error::AssertionFailed, __index));
+				return Err((::parst::error::Error::AssertionFailed, __source));
 			}
 		})
 	}
 	if let Some(e) = field_attributes.assert_eq {
 		tokens.push(quote! {
 			if #name != #e {
-				return Err((::parst::error::Error::AssertionFailed, __index));
+				return Err((::parst::error::Error::AssertionFailed, __source));
 			}
 		});
 	}
 	if let Some(e) = field_attributes.assert_ne {
 		tokens.push(quote! {
 			if #name == #e {
-				return Err((::parst::error::Error::AssertionFailed, __index));
+				return Err((::parst::error::Error::AssertionFailed, __source));
 			}
 		});
 	}

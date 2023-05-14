@@ -46,7 +46,7 @@ fn process_input_parsable(input: &DeriveInput) -> TokenStream {
 	quote! {
 		#[automatically_derived]
 		impl #combined_impl_generics ::parst::Parsable<#src_lifetime, #src_type, #ctx_type> for #ident #generics #combined_where {
-			fn read(__source: &#src_lifetime #src_type, #ctx_pat: #ctx_type, __index: usize) -> ::parst::PResult<Self, #src_type> {
+			fn read(__source: &#src_lifetime #src_type, #ctx_pat: #ctx_type) -> ::parst::PResult<Self, #src_type> {
 				#![allow(non_snake_case)]
 				#expression
 			}

@@ -4,9 +4,7 @@ use crate::{
 
 impl<'a, Src> Parsable<'a, Src> for () {
 	#[inline]
-	fn read(source: &'a Src, _context: (), index: usize) -> PResult<Self, Src> {
-		Ok(((), source, index))
-	}
+	fn read(source: &'a Src, _context: ()) -> PResult<Self, Src> { Ok(((), source)) }
 }
 
 impl Deparsable for () {
@@ -16,9 +14,7 @@ impl Deparsable for () {
 
 impl<'a> Parsable<'a, [u8]> for &'a [u8] {
 	#[inline]
-	fn read(source: &'a [u8], _context: (), index: usize) -> PResultBytes<Self> {
-		Ok((source, &[], index))
-	}
+	fn read(source: &'a [u8], _context: ()) -> PResultBytes<Self> { Ok((source, &[])) }
 }
 
 impl Deparsable for &[u8] {
@@ -28,9 +24,7 @@ impl Deparsable for &[u8] {
 
 impl<'a> Parsable<'a, str> for &'a str {
 	#[inline]
-	fn read(source: &'a str, _context: (), index: usize) -> PResultStr<Self> {
-		Ok((source, "", index))
-	}
+	fn read(source: &'a str, _context: ()) -> PResultStr<Self> { Ok((source, "")) }
 }
 
 impl Deparsable for &str {
@@ -42,9 +36,9 @@ impl Deparsable for &str {
 
 impl<'a, const N: usize> Parsable<'a, [u8]> for &'a [u8; N] {
 	#[inline]
-	fn read(source: &'a [u8], _context: (), index: usize) -> PResultBytes<Self> {
-		let (output, source) = try_split_array(source).ok_or((Error::NotEnoughBytes, index))?;
-		Ok((output, source, index + N))
+	fn read(source: &'a [u8], _context: ()) -> PResultBytes<Self> {
+		let (output, source) = try_split_array(source).ok_or((Error::NotEnoughBytes, source))?;
+		Ok((output, source))
 	}
 }
 
@@ -59,11 +53,11 @@ macro_rules! impl_prim {
 	($ty:ident $size:literal) => {
 		impl Parsable<'_, [u8]> for $ty {
 			#[inline]
-			fn read(source: &[u8], _context: (), index: usize) -> PResultBytes<Self> {
+			fn read(source: &[u8], _context: ()) -> PResultBytes<Self> {
 				let (head, source) =
-					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, index))?;
+					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, source))?;
 				let prim = $ty::from_ne_bytes(*head);
-				Ok((prim, source, index + $size))
+				Ok((prim, source))
 			}
 		}
 
