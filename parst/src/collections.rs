@@ -1,12 +1,13 @@
-use crate::{Deparsable, PResult, PResultBytes, Parsable};
+use crate::{Deparsable, PResult, Parsable};
 use std::{array::try_from_fn, marker::PhantomData, ops::Deref};
 
-impl<'a, T, Ctx, const N: usize> Parsable<'a, [u8], Ctx> for [T; N]
+impl<'a, T, Src, Ctx, const N: usize> Parsable<'a, Src, Ctx> for [T; N]
 where
+	Src: ?Sized,
 	Ctx: Copy,
-	T: Parsable<'a, [u8], Ctx>,
+	T: Parsable<'a, Src, Ctx>,
 {
-	fn read(mut source: &'a [u8], context: Ctx, mut index: usize) -> PResultBytes<Self> {
+	fn read(mut source: &'a Src, context: Ctx, mut index: usize) -> PResult<Self, Src> {
 		try_from_fn(|_| {
 			let (element, this_bytes, new_index) = Parsable::read(source, context, index)?;
 			source = this_bytes;
@@ -35,15 +36,16 @@ macro_rules! impl_tuple {
         impl_tuple!(@impl $name $ty $( $N $T )+);
     };
 	(@impl $( $N:ident $T:ident )+) => {
-		impl<'a, S, Ctx, $( $T ),+> Parsable<'a, S, Ctx> for ($( $T, )+)
+		impl<'a, Src, Ctx, $( $T ),+> Parsable<'a, Src, Ctx> for ($( $T, )+)
 		where
+			Src: ?Sized,
             Ctx: Copy,
             $(
-                $T: Parsable<'a, S, Ctx>,
+                $T: Parsable<'a, Src, Ctx>,
             )+
 		{
 
-			fn read(source: &'a S, context: Ctx, index: usize) -> PResult<Self, S> {
+			fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src> {
                 $(
                     let ($N, source, index) = Parsable::read(source, context, index)?;
                 )+

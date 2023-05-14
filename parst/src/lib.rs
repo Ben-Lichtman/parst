@@ -41,3 +41,9 @@ where
 pub trait Deparsable {
 	fn write(&self, w: &mut impl Write) -> std::io::Result<()>;
 }
+
+pub fn test(input: &[u8]) -> Option<(u32 ,u32)> {
+	let x = Parsable::read_uncounted(input, ());
+	x.map(|x| x.0).ok()
+	
+}
