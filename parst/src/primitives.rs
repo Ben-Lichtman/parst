@@ -3,38 +3,45 @@ use crate::{
 };
 
 impl<'a, Src> Parsable<'a, Src> for () {
+	#[inline]
 	fn read(source: &'a Src, _context: (), index: usize) -> PResult<Self, Src> {
 		Ok(((), source, index))
 	}
 }
 
 impl Deparsable for () {
+	#[inline]
 	fn write(&self, _w: &mut impl std::io::Write) -> std::io::Result<()> { Ok(()) }
 }
 
 impl<'a> Parsable<'a, [u8]> for &'a [u8] {
+	#[inline]
 	fn read(source: &'a [u8], _context: (), index: usize) -> PResultBytes<Self> {
 		Ok((source, &[], index))
 	}
 }
 
 impl Deparsable for &[u8] {
+	#[inline]
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> { w.write_all(self) }
 }
 
 impl<'a> Parsable<'a, str> for &'a str {
+	#[inline]
 	fn read(source: &'a str, _context: (), index: usize) -> PResultStr<Self> {
 		Ok((source, "", index))
 	}
 }
 
 impl Deparsable for &str {
+	#[inline]
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(self.as_bytes())
 	}
 }
 
 impl<'a, const N: usize> Parsable<'a, [u8]> for &'a [u8; N] {
+	#[inline]
 	fn read(source: &'a [u8], _context: (), index: usize) -> PResultBytes<Self> {
 		let (output, source) = try_split_array(source).ok_or((Error::NotEnoughBytes, index))?;
 		Ok((output, source, index + N))
@@ -42,6 +49,7 @@ impl<'a, const N: usize> Parsable<'a, [u8]> for &'a [u8; N] {
 }
 
 impl<const N: usize> Deparsable for &[u8; N] {
+	#[inline]
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		w.write_all(self.as_ref())
 	}
@@ -50,6 +58,7 @@ impl<const N: usize> Deparsable for &[u8; N] {
 macro_rules! impl_prim {
 	($ty:ident $size:literal) => {
 		impl Parsable<'_, [u8]> for $ty {
+			#[inline]
 			fn read(source: &[u8], _context: (), index: usize) -> PResultBytes<Self> {
 				let (head, source) =
 					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, index))?;
@@ -59,6 +68,7 @@ macro_rules! impl_prim {
 		}
 
 		impl Deparsable for $ty {
+			#[inline]
 			fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 				w.write_all(&self.to_ne_bytes())
 			}

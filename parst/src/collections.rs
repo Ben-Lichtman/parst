@@ -7,6 +7,7 @@ where
 	Ctx: Copy,
 	T: Parsable<'a, Src, Ctx>,
 {
+	#[inline]
 	fn read(mut source: &'a Src, context: Ctx, mut index: usize) -> PResult<Self, Src> {
 		try_from_fn(|_| {
 			let (element, this_bytes, new_index) = Parsable::read(source, context, index)?;
@@ -22,6 +23,7 @@ impl<T, const N: usize> Deparsable for [T; N]
 where
 	T: Deparsable,
 {
+	#[inline]
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		self.iter().try_for_each(|element| element.write(&mut *w))
 	}
@@ -44,7 +46,7 @@ macro_rules! impl_tuple {
                 $T: Parsable<'a, Src, Ctx>,
             )+
 		{
-
+			#[inline]
 			fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src> {
                 $(
                     let ($N, source, index) = Parsable::read(source, context, index)?;
@@ -59,6 +61,7 @@ macro_rules! impl_tuple {
 				$T: Deparsable,
 			)+
 		{
+			#[inline]
 			fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 				let ( $( $N, )+ ) = self;
 				$(
@@ -78,6 +81,7 @@ where
 	Ctx: Copy,
 	T: Parsable<'a, Src, Ctx>,
 {
+	#[inline]
 	fn read(mut source: &'a Src, context: Ctx, mut index: usize) -> PResult<Self, Src> {
 		let mut v = Vec::new();
 		while let Ok((element, remainder, new_index)) = Parsable::read(source, context, index) {
@@ -93,6 +97,7 @@ impl<T> Deparsable for Vec<T>
 where
 	T: Deparsable,
 {
+	#[inline]
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		for element in self {
 			element.write(&mut *w)?;
@@ -106,6 +111,7 @@ where
 	Src: ?Sized,
 	T: Parsable<'a, Src, Ctx>,
 {
+	#[inline]
 	fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src> {
 		let (boxed, source, index) = Parsable::read(source, context, index)?;
 		Ok((Box::new(boxed), source, index))
@@ -116,6 +122,7 @@ impl<T> Deparsable for Box<T>
 where
 	T: Deparsable,
 {
+	#[inline]
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		self.deref().write(&mut *w)
 	}
@@ -126,6 +133,7 @@ where
 	Src: ?Sized,
 	T: Parsable<'a, Src, Ctx>,
 {
+	#[inline]
 	fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src> {
 		match Parsable::read(source, context, index) {
 			Ok((inner, source, index)) => Ok((Some(inner), source, index)),
@@ -138,6 +146,7 @@ impl<T> Deparsable for Option<T>
 where
 	T: Deparsable,
 {
+	#[inline]
 	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 		match self {
 			Some(inner) => inner.write(&mut *w),
@@ -150,6 +159,7 @@ impl<Src, Ctx, T> Parsable<'_, Src, Ctx> for PhantomData<T>
 where
 	Src: ?Sized,
 {
+	#[inline]
 	fn read(source: &Src, _context: Ctx, index: usize) -> PResult<Self, Src> {
 		Ok((PhantomData, source, index))
 	}

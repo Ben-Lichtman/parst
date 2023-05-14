@@ -25,6 +25,7 @@ impl<T> AsMut<T> for BE<T> {
 macro_rules! impl_prim {
 	($ty:ident $size:literal) => {
 		impl Parsable<'_, [u8]> for LE<$ty> {
+			#[inline]
 			fn read(source: &[u8], _context: (), index: usize) -> PResultBytes<Self> {
 				let (head, source) =
 					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, index))?;
@@ -34,6 +35,7 @@ macro_rules! impl_prim {
 		}
 
 		impl Parsable<'_, [u8]> for BE<$ty> {
+			#[inline]
 			fn read(source: &[u8], _context: (), index: usize) -> PResultBytes<Self> {
 				let (head, source) =
 					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, index))?;
@@ -43,12 +45,14 @@ macro_rules! impl_prim {
 		}
 
 		impl Deparsable for LE<$ty> {
+			#[inline]
 			fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 				w.write_all(&self.0.to_le_bytes())
 			}
 		}
 
 		impl Deparsable for BE<$ty> {
+			#[inline]
 			fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
 				w.write_all(&self.0.to_be_bytes())
 			}

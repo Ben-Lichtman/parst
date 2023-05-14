@@ -30,6 +30,7 @@ where
 {
 	fn read(source: &'a Src, context: Ctx, index: usize) -> PResult<Self, Src>;
 
+	#[inline]
 	fn read_uncounted(source: &'a Src, context: Ctx) -> PResultUncounted<Self, Src> {
 		match Self::read(source, context, 0) {
 			Ok((value, src, _)) => Ok((value, src)),
@@ -40,10 +41,4 @@ where
 
 pub trait Deparsable {
 	fn write(&self, w: &mut impl Write) -> std::io::Result<()>;
-}
-
-pub fn test(input: &[u8]) -> Option<(u32 ,u32)> {
-	let x = Parsable::read_uncounted(input, ());
-	x.map(|x| x.0).ok()
-	
 }
