@@ -50,6 +50,7 @@ impl<L, T> AsRef<[T]> for VarStructs<L, T> {
 
 impl<'a, S, Ctx, L, T> Parsable<'a, S, Ctx> for VarStructs<L, T>
 where
+	S: ?Sized,
 	Ctx: Copy,
 	L: Copy + Into<u64> + Parsable<'a, S, ()>,
 	T: Parsable<'a, S, Ctx>,
