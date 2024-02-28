@@ -1,6 +1,3 @@
 [workspace]
-members = [
-    "parst",
-    "parst_derive",
-    "parst_extra",
-]
+resolver = "2"
+members = ["parst", "parst_derive", "parst_extra"]
