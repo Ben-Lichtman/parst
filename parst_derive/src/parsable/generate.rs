@@ -118,13 +118,13 @@ fn gen_assign(Field { attrs, ty, .. }: &Field, name: &TokenStream, ctx_pat: &Pat
 
 	let assignment = match field_attributes.context {
 		InnerContext::None => quote! {
-			let (#name, __source) = <#ty as ::parst::Parsable<_>>::read(__source, ())?;
+			let (#name, __source) = <#ty as ::parst::Parsable<_, _>>::read(__source, ())?;
 		},
 		InnerContext::Inherit => quote! {
-			let (#name, __source) = <#ty as ::parst::Parsable<_>>::read(__source, #ctx_pat)?;
+			let (#name, __source) = <#ty as ::parst::Parsable<_, _>>::read(__source, #ctx_pat)?;
 		},
 		InnerContext::Expr(e) => quote! {
-			let (#name, __source) = <#ty as ::parst::Parsable<_>>::read(__source, { #e })?;
+			let (#name, __source) = <#ty as ::parst::Parsable<_, _>>::read(__source, { #e })?;
 		},
 	};
 	tokens.push(assignment);

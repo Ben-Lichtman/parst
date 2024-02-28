@@ -147,9 +147,10 @@ pub fn parse_field_attributes(input: &[Attribute]) -> FieldAttributes {
 				"matches" => field_attributes.matches = Some(l.parse().unwrap()),
 				"assert_eq" => field_attributes.assert_eq = Some(l.parse().unwrap()),
 				"assert_ne" => field_attributes.assert_ne = Some(l.parse().unwrap()),
+				"with_context" => field_attributes.context = InnerContext::Expr(l.parse().unwrap()),
 				x => panic!("{x:#?}"),
 			},
-			NestedMeta::Lit(Lit::Str(s)) => match s.value().as_str() {
+			NestedMeta::Lit(Lit::Str(l)) => match l.value().as_str() {
 				"inherit" => field_attributes.context = InnerContext::Inherit,
 				_ => unimplemented!(),
 			},
