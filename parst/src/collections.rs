@@ -18,13 +18,15 @@ where
 	}
 }
 
-impl<T, const N: usize> Deparsable for [T; N]
+impl<T, Ctx, const N: usize> Deparsable<Ctx> for [T; N]
 where
-	T: Deparsable,
+	Ctx: Copy,
+	T: Deparsable<Ctx>,
 {
 	#[inline]
-	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
-		self.iter().try_for_each(|element| element.write(&mut *w))
+	fn write(&self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
+		self.iter()
+			.try_for_each(|element| element.write(&mut *w, context))
 	}
 }
 
@@ -54,17 +56,18 @@ macro_rules! impl_tuple {
 			}
 		}
 
-		impl<$( $T ),+> Deparsable for ($( $T, )+)
+		impl<Ctx, $( $T ),+> Deparsable<Ctx> for ($( $T, )+)
 		where
 			$(
-				$T: Deparsable,
+				Ctx: Copy,
+				$T: Deparsable<Ctx>,
 			)+
 		{
 			#[inline]
-			fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+			fn write(&self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
 				let ( $( $N, )+ ) = self;
 				$(
-					$N.write(&mut *w)?;
+					$N.write(&mut *w, context)?;
 				)+
 				Ok(())
 			}
@@ -91,14 +94,15 @@ where
 	}
 }
 
-impl<T> Deparsable for Vec<T>
+impl<T, Ctx> Deparsable<Ctx> for Vec<T>
 where
-	T: Deparsable,
+	Ctx: Copy,
+	T: Deparsable<Ctx>,
 {
 	#[inline]
-	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
 		for element in self {
-			element.write(&mut *w)?;
+			element.write(&mut *w, context)?;
 		}
 		Ok(())
 	}
@@ -116,13 +120,13 @@ where
 	}
 }
 
-impl<T> Deparsable for Box<T>
+impl<T, Ctx> Deparsable<Ctx> for Box<T>
 where
-	T: Deparsable,
+	T: Deparsable<Ctx>,
 {
 	#[inline]
-	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
-		self.deref().write(&mut *w)
+	fn write(&self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
+		self.deref().write(&mut *w, context)
 	}
 }
 
@@ -140,14 +144,14 @@ where
 	}
 }
 
-impl<T> Deparsable for Option<T>
+impl<T, Ctx> Deparsable<Ctx> for Option<T>
 where
-	T: Deparsable,
+	T: Deparsable<Ctx>,
 {
 	#[inline]
-	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
+	fn write(&self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
 		match self {
-			Some(inner) => inner.write(&mut *w),
+			Some(inner) => inner.write(&mut *w, context),
 			None => Ok(()),
 		}
 	}

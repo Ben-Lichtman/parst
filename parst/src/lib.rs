@@ -26,6 +26,6 @@ where
 	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src>;
 }
 
-pub trait Deparsable {
-	fn write(&self, w: &mut impl Write) -> std::io::Result<()>;
+pub trait Deparsable<Ctx = ()> {
+	fn write(&self, w: &mut impl Write, context: Ctx) -> std::io::Result<()>;
 }
