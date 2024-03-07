@@ -31,9 +31,9 @@ impl<L> Deparsable for VarBytes<'_, L>
 where
 	L: Deparsable,
 {
-	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
-		self.length.write(&mut *w)?;
-		self.slice.write(&mut *w)?;
+	fn write(&self, w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
+		self.length.write(&mut *w, ())?;
+		self.slice.write(&mut *w, ())?;
 		Ok(())
 	}
 }
@@ -74,9 +74,9 @@ where
 	L: Deparsable,
 	T: Deparsable,
 {
-	fn write(&self, w: &mut impl std::io::Write) -> std::io::Result<()> {
-		self.length.write(&mut *w)?;
-		self.vec.write(&mut *w)?;
+	fn write(&self, w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
+		self.length.write(&mut *w, ())?;
+		self.vec.write(&mut *w, ())?;
 		Ok(())
 	}
 }
