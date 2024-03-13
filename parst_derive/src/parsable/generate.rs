@@ -29,19 +29,15 @@ fn generate_struct(input: &DataStruct, ctx: &LocalContext) -> TokenStream {
 		.map(|(field, name)| gen_assign(field, name, &ctx.ctx_pat))
 		.collect::<Vec<_>>();
 
-	match input.fields {
-		Fields::Named(_) => quote! {
-			#( #assignments )*
-			Ok((Self { #( #field_names ),* }, __source))
-		},
-		Fields::Unnamed(_) => quote! {
-			#( #assignments )*
-			Ok((Self ( #( #field_names ),* ), __source))
-		},
-		Fields::Unit => quote! {
-			#( #assignments )*
-			Ok((Self, __source))
-		},
+	let pattern = match input.fields {
+		Fields::Named(_) => quote! { { #(#field_names),* } },
+		Fields::Unnamed(_) => quote! { ( #(#field_names),* ) },
+		Fields::Unit => quote! {},
+	};
+
+	quote! {
+		#( #assignments )*
+		Ok((Self #pattern, __source))
 	}
 }
 
@@ -74,16 +70,14 @@ fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
 				.map(|(field, name)| gen_assign(field, name, &ctx.ctx_pat))
 				.collect::<Vec<_>>();
 
-			let return_expr = match variant.fields {
-				Fields::Named(_) => quote! {
-					Ok((Self::#name { #( #field_names ),* }, __source))
-				},
-				Fields::Unnamed(_) => quote! {
-					Ok((Self::#name ( #( #field_names ),* ), __source))
-				},
-				Fields::Unit => quote! {
-					Ok((Self::#name, __source))
-				},
+			let pattern = match variant.fields {
+				Fields::Named(_) => quote! { { #(#field_names),* } },
+				Fields::Unnamed(_) => quote! { ( #(#field_names),* ) },
+				Fields::Unit => quote! {},
+			};
+
+			let return_expr = quote! {
+				Ok((Self::#name #pattern, __source))
 			};
 
 			let function_def = quote! {

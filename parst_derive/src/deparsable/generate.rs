@@ -22,19 +22,12 @@ fn field_name((index, field): (usize, &Field)) -> TokenStream {
 	}
 }
 
-fn field_name_borrow((index, field): (usize, &Field)) -> TokenStream {
-	match &field.ident {
-		Some(ident) => quote! { #ident },
-		None => quote! { #index },
-	}
-}
-
 fn generate_struct(input: &DataStruct, ctx: &LocalContext) -> TokenStream {
 	let field_names = input
 		.fields
 		.iter()
 		.enumerate()
-		.map(field_name_borrow)
+		.map(field_name)
 		.collect::<Vec<_>>();
 
 	let writes = input
@@ -44,8 +37,14 @@ fn generate_struct(input: &DataStruct, ctx: &LocalContext) -> TokenStream {
 		.map(|(field, name)| gen_write(field, name, &ctx.ctx_pat))
 		.collect::<Vec<_>>();
 
+	let pattern = match input.fields {
+		Fields::Named(_) => quote! { { #(#field_names),* } },
+		Fields::Unnamed(_) => quote! { ( #(#field_names),* ) },
+		Fields::Unit => quote! {},
+	};
+
 	quote! {
-		let Self { #( #field_names ),* } = self;
+		let Self #pattern = self;
 		#( #writes )*
 		Ok(())
 	}
