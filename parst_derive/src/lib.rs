@@ -86,7 +86,7 @@ fn process_input_deparsable(input: &DeriveInput) -> TokenStream {
 		#[automatically_derived]
 		impl #combined_impl_generics ::parst::Deparsable<#ctx_type> for #ident #generics #combined_where
 		{
-			fn write(&self, __w: &mut impl ::std::io::Write, #ctx_pat: #ctx_type) -> ::std::io::Result<()> {
+			fn write(&mut self, __w: &mut impl ::std::io::Write, #ctx_pat: #ctx_type) -> ::std::io::Result<()> {
 				#![allow(non_snake_case)]
 				#expression
 			}

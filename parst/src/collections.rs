@@ -1,5 +1,9 @@
 use crate::{Deparsable, PResult, Parsable};
-use std::{array::try_from_fn, marker::PhantomData, ops::Deref};
+use std::{
+	array::try_from_fn,
+	marker::PhantomData,
+	ops::{Deref, DerefMut},
+};
 
 impl<'a, T, Src, Ctx, const N: usize> Parsable<'a, Src, Ctx> for [T; N]
 where
@@ -24,8 +28,8 @@ where
 	T: Deparsable<Ctx>,
 {
 	#[inline]
-	fn write(&self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
-		self.iter()
+	fn write(&mut self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
+		self.iter_mut()
 			.try_for_each(|element| element.write(&mut *w, context))
 	}
 }
@@ -64,7 +68,7 @@ macro_rules! impl_tuple {
 			)+
 		{
 			#[inline]
-			fn write(&self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
+			fn write(&mut self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
 				let ( $( $N, )+ ) = self;
 				$(
 					$N.write(&mut *w, context)?;
@@ -100,7 +104,7 @@ where
 	T: Deparsable<Ctx>,
 {
 	#[inline]
-	fn write(&self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
+	fn write(&mut self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
 		for element in self {
 			element.write(&mut *w, context)?;
 		}
@@ -125,8 +129,8 @@ where
 	T: Deparsable<Ctx>,
 {
 	#[inline]
-	fn write(&self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
-		self.deref().write(&mut *w, context)
+	fn write(&mut self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
+		self.deref_mut().write(&mut *w, context)
 	}
 }
 
@@ -149,7 +153,7 @@ where
 	T: Deparsable<Ctx>,
 {
 	#[inline]
-	fn write(&self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
+	fn write(&mut self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
 		match self {
 			Some(inner) => inner.write(&mut *w, context),
 			None => Ok(()),

@@ -9,7 +9,9 @@ impl<'a, Src> Parsable<'a, Src> for () {
 
 impl Deparsable for () {
 	#[inline]
-	fn write(&self, _w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> { Ok(()) }
+	fn write(&mut self, _w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
+		Ok(())
+	}
 }
 
 impl<'a> Parsable<'a, [u8]> for &'a [u8] {
@@ -19,7 +21,7 @@ impl<'a> Parsable<'a, [u8]> for &'a [u8] {
 
 impl Deparsable for &[u8] {
 	#[inline]
-	fn write(&self, w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
+	fn write(&mut self, w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
 		w.write_all(self)
 	}
 }
@@ -31,7 +33,7 @@ impl<'a> Parsable<'a, str> for &'a str {
 
 impl Deparsable for &str {
 	#[inline]
-	fn write(&self, w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
+	fn write(&mut self, w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
 		w.write_all(self.as_bytes())
 	}
 }
@@ -46,7 +48,7 @@ impl<'a, const N: usize> Parsable<'a, [u8]> for &'a [u8; N] {
 
 impl<const N: usize> Deparsable for &[u8; N] {
 	#[inline]
-	fn write(&self, w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
+	fn write(&mut self, w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
 		w.write_all(self.as_ref())
 	}
 }
@@ -65,7 +67,7 @@ macro_rules! impl_prim {
 
 		impl Deparsable for $ty {
 			#[inline]
-			fn write(&self, w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
+			fn write(&mut self, w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
 				w.write_all(&self.to_ne_bytes())
 			}
 		}

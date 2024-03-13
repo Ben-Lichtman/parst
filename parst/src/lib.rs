@@ -27,5 +27,5 @@ where
 }
 
 pub trait Deparsable<Ctx = ()> {
-	fn write(&self, w: &mut impl Write, context: Ctx) -> std::io::Result<()>;
+	fn write(&mut self, w: &mut impl Write, context: Ctx) -> std::io::Result<()>;
 }

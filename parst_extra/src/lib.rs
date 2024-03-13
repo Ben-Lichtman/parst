@@ -15,7 +15,7 @@ where
 }
 
 impl Deparsable for Never {
-	fn write(&self, _w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
+	fn write(&mut self, _w: &mut impl std::io::Write, _context: ()) -> std::io::Result<()> {
 		Err(std::io::Error::new(
 			std::io::ErrorKind::PermissionDenied,
 			"Can not deparse a Never",
