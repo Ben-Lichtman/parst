@@ -98,6 +98,13 @@ fn gen_write(Field { attrs, ty, .. }: &Field, name: &TokenStream, ctx_pat: &Pat)
 
 	let mut tokens = Vec::new();
 
+	if let Some(e) = field_attributes.assert_eq {
+		tokens.push(quote! {
+			let mut __temp = #e;
+			let #name = &mut __temp;
+		});
+	}
+
 	let assignment = match field_attributes.context {
 		InnerContext::None => quote! {
 			<#ty as ::parst::Deparsable<_>>::write(#name, __w, ())?;
@@ -106,7 +113,10 @@ fn gen_write(Field { attrs, ty, .. }: &Field, name: &TokenStream, ctx_pat: &Pat)
 			<#ty as ::parst::Deparsable<_>>::write(#name, __w, #ctx_pat)?;
 		},
 		InnerContext::Expr(e) => quote! {
-			<#ty as ::parst::Deparsable<_>>::write(#name, __w, { #e })?;
+			<#ty as ::parst::Deparsable<_>>::write(#name, __w, {
+				let __temp = *#e;
+				__temp
+			})?;
 		},
 	};
 	tokens.push(assignment);
