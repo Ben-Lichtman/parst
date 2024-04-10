@@ -1,5 +1,5 @@
 use crate::{
-	attributes::{parse_field_attributes, InnerContext, LocalContext},
+	attributes::{parse_field_attributes, parse_variant_attributes, InnerContext, LocalContext},
 	helpers::field_name,
 };
 use proc_macro2::TokenStream;
@@ -42,11 +42,19 @@ fn generate_struct(input: &DataStruct, ctx: &LocalContext) -> TokenStream {
 }
 
 fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
+	let discriminant = ctx.dis_type.as_ref().map(|ty| {
+		quote! {
+			let (__discriminant, __source) = <#ty as ::parst::Parsable<_, _>>::read(__source, ())?;
+		}
+	});
+
 	let src_type = &ctx.src_type;
 	let function_calls = input
 		.variants
 		.iter()
 		.map(|variant| {
+			let variant_attributes = parse_variant_attributes(&variant.attrs);
+
 			let field_names = variant
 				.fields
 				.iter()
@@ -92,14 +100,29 @@ fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
 					return Ok(x);
 				}
 			};
-			quote! {
-				#function_def
-				#function_call
+
+			match discriminant.is_some() {
+				true => {
+					let dis_value = variant_attributes
+						.dis
+						.expect("Must give a discriminant pattern for each variant");
+					quote! {
+						if __discriminant == { #dis_value } {
+							#function_def
+							#function_call
+						}
+					}
+				}
+				false => quote! {
+					#function_def
+					#function_call
+				},
 			}
 		})
 		.collect::<Vec<_>>();
 
 	quote! {
+		#discriminant
 		#( #function_calls )*
 		Err((::parst::error::Error::InvalidInput, __source))
 	}

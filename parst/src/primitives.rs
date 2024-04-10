@@ -2,7 +2,10 @@ use crate::{
 	error::Error, helpers::try_split_array, Deparsable, PResult, PResultBytes, PResultStr, Parsable,
 };
 
-impl<'a, Src> Parsable<'a, Src> for () {
+impl<'a, Src> Parsable<'a, Src> for ()
+where
+	Src: ?Sized,
+{
 	#[inline]
 	fn read(source: &'a Src, _context: ()) -> PResult<Self, Src> { Ok(((), source)) }
 }

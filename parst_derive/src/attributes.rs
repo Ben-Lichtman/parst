@@ -10,6 +10,7 @@ pub struct OuterAttributes {
 	pub lifetime: Option<Lifetime>,
 	pub src: Option<Type>,
 	pub ctx: Option<PatType>,
+	pub dis: Option<Type>,
 }
 
 impl OuterAttributes {
@@ -48,6 +49,11 @@ impl OuterAttributes {
 								outer_attributes.ctx = Some(x);
 							}
 						}
+						"dis" => {
+							if let Ok(x) = litstr.parse::<Type>() {
+								outer_attributes.dis = Some(x)
+							}
+						}
 						x => panic!("{}", x),
 					}
 				}
@@ -67,6 +73,7 @@ pub struct LocalContext {
 	pub ctx_pat: Pat,
 	pub ctx_type: Type,
 	pub ctx_is_generic: bool,
+	pub dis_type: Option<Type>,
 }
 
 impl LocalContext {
@@ -115,6 +122,7 @@ impl From<OuterAttributes> for LocalContext {
 			ctx_pat,
 			ctx_type,
 			ctx_is_generic,
+			dis_type: value.dis,
 		}
 	}
 }
@@ -168,4 +176,36 @@ pub fn parse_field_attributes(input: &[Attribute]) -> FieldAttributes {
 		});
 
 	field_attributes
+}
+
+#[derive(Debug, Default)]
+pub struct VariantAttributes {
+	pub dis: Option<Expr>,
+}
+
+pub fn parse_variant_attributes(input: &[Attribute]) -> VariantAttributes {
+	let mut variant_attributes = VariantAttributes::default();
+
+	input
+		.iter()
+		.filter(|a| a.path == parse_quote! { parst })
+		.filter_map(|a| a.parse_meta().ok())
+		.filter_map(|meta| match meta {
+			Meta::List(l) => Some(l.nested.into_iter()),
+			_ => None,
+		})
+		.flatten()
+		.for_each(|nested| match nested {
+			NestedMeta::Meta(Meta::NameValue(MetaNameValue {
+				path,
+				lit: Lit::Str(l),
+				..
+			})) => match path.to_token_stream().to_string().as_str() {
+				"dis" => variant_attributes.dis = Some(l.parse().unwrap()),
+				x => panic!("{x:#?}"),
+			},
+			_ => unimplemented!(),
+		});
+
+	variant_attributes
 }

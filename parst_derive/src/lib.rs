@@ -16,7 +16,15 @@ use syn::{parse_macro_input, parse_quote, DeriveInput};
 
 #[proc_macro_derive(
 	Parsable,
-	attributes(parst, matches, assert_eq, assert_ne, with_context, with_field_context)
+	attributes(
+		parst,
+		matches,
+		assert_eq,
+		assert_ne,
+		with_context,
+		with_field_context,
+		dis
+	)
 )]
 pub fn derive_parsable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 	let derive_input = parse_macro_input!(input as DeriveInput);

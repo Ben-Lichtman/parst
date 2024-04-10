@@ -2,7 +2,9 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Data, DataEnum, DataStruct, DeriveInput, Field, Fields, Pat};
 
-use crate::attributes::{parse_field_attributes, InnerContext, LocalContext};
+use crate::attributes::{
+	parse_field_attributes, parse_variant_attributes, InnerContext, LocalContext,
+};
 
 pub fn generate_expression_deparsable(input: &DeriveInput, ctx: &LocalContext) -> TokenStream {
 	match &input.data {
@@ -55,6 +57,8 @@ fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
 		.variants
 		.iter()
 		.map(|variant| {
+			let variant_attributes = parse_variant_attributes(&variant.attrs);
+
 			let name = &variant.ident;
 
 			let field_names = variant
@@ -63,6 +67,16 @@ fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
 				.enumerate()
 				.map(field_name)
 				.collect::<Vec<_>>();
+
+			let discriminant_write = variant_attributes.dis.map(|value| {
+				let dis_type = ctx
+					.dis_type
+					.as_ref()
+					.expect("Must declare the type of the enum discriminant");
+				quote! {
+					<#dis_type as ::parst::Deparsable<_>>::write(#value, __w, ())?;
+				}
+			});
 
 			let writes = variant
 				.fields
@@ -79,6 +93,7 @@ fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
 
 			quote! {
 				Self::#name #pattern => {
+					#discriminant_write
 					#( #writes )*
 				}
 			}
