@@ -105,7 +105,7 @@ fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
 				true => {
 					let dis_value = variant_attributes
 						.dis
-						.expect("Must give a discriminant pattern for each variant");
+						.expect("Must give a discriminant value for each variant");
 					quote! {
 						if __discriminant == { #dis_value } {
 							#function_def

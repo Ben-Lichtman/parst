@@ -74,7 +74,7 @@ fn generate_enum(input: &DataEnum, ctx: &LocalContext) -> TokenStream {
 					.as_ref()
 					.expect("Must declare the type of the enum discriminant");
 				quote! {
-					<#dis_type as ::parst::Deparsable<_>>::write(#value, __w, ())?;
+					<#dis_type as ::parst::Deparsable<_>>::write(&mut #value, __w, ())?;
 				}
 			});
 

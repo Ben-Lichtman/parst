@@ -1,9 +1,5 @@
 use crate::{Deparsable, PResult, Parsable};
-use std::{
-	array::try_from_fn,
-	marker::PhantomData,
-	ops::{Deref, DerefMut},
-};
+use std::{array::try_from_fn, marker::PhantomData, ops::DerefMut};
 
 impl<'a, T, Src, Ctx, const N: usize> Parsable<'a, Src, Ctx> for [T; N]
 where
