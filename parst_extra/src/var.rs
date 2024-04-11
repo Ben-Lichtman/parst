@@ -80,3 +80,42 @@ where
 		Ok(())
 	}
 }
+
+pub struct ConsumingVec<T>(Vec<T>);
+
+impl<'a, Ctx, T> Parsable<'a, [u8], Ctx> for ConsumingVec<T>
+where
+	Ctx: Copy,
+	T: Parsable<'a, [u8], Ctx>,
+{
+	#[inline]
+	fn read(mut source: &'a [u8], context: Ctx) -> PResult<Self, [u8]> {
+		let mut v = Vec::new();
+		while let Ok((element, remainder)) = Parsable::read(source, context) {
+			v.push(element);
+			source = remainder;
+		}
+		if !source.is_empty() {
+			return Err((Error::InvalidInput, source));
+		}
+		Ok((ConsumingVec(v), source))
+	}
+}
+
+impl<T, Ctx> Deparsable<Ctx> for ConsumingVec<T>
+where
+	Ctx: Copy,
+	T: Deparsable<Ctx>,
+{
+	#[inline]
+	fn write(&mut self, w: &mut impl std::io::Write, context: Ctx) -> std::io::Result<()> {
+		for element in self.0.as_mut_slice() {
+			element.write(&mut *w, context)?;
+		}
+		Ok(())
+	}
+}
+
+impl<T> AsRef<[T]> for ConsumingVec<T> {
+	fn as_ref(&self) -> &[T] { self.0.as_ref() }
+}
