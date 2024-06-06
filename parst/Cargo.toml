@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 parst_derive = { version = "0.2.0", path = "../parst_derive", optional = true }
-thiserror = "1.0.37"
+thiserror = "1.0.61"
 
 [features]
 default = ["derive", "endian"]
