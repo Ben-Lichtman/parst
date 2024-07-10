@@ -1,8 +1,7 @@
 use quote::ToTokens;
-use std::ops::Deref;
 use syn::{
-	parse_quote, Attribute, Expr, FnArg, GenericParam, Generics, Lifetime, Lit, Meta,
-	MetaNameValue, NestedMeta, Pat, PatType, Type,
+	parse_quote, Attribute, Expr, FnArg, GenericParam, Generics, Lifetime, LitStr, Pat, PatType,
+	Type,
 };
 
 #[derive(Debug, Default)]
@@ -19,46 +18,46 @@ impl OuterAttributes {
 
 		input
 			.iter()
-			.filter(|a| a.path == parse_quote! { parst })
-			.filter_map(|a| a.parse_meta().ok())
-			.filter_map(|meta| match meta {
-				Meta::List(l) => Some(l.nested.into_iter()),
-				_ => None,
-			})
-			.flatten()
-			.for_each(|nested| match nested {
-				NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-					path,
-					lit: Lit::Str(litstr),
-					..
-				})) => {
-					let path = path.into_token_stream().to_string();
-					match path.deref() {
-						"lifetime" => {
-							if let Ok(x) = litstr.parse::<Lifetime>() {
-								outer_attributes.lifetime = Some(x)
+			.filter(|a| a.path().is_ident("parst"))
+			.for_each(|a| {
+				a.parse_nested_meta(|meta| {
+					if let Some(ident) = meta.path.get_ident() {
+						let ident_string = ident.into_token_stream().to_string();
+						match ident_string.as_ref() {
+							"lifetime" => {
+								let value = meta.value().unwrap();
+								let litstring = value.parse::<LitStr>().unwrap();
+								let value = litstring.parse::<Lifetime>().unwrap();
+								outer_attributes.lifetime = Some(value);
 							}
-						}
-						"src" => {
-							if let Ok(x) = litstr.parse::<Type>() {
-								outer_attributes.src = Some(x)
+							"src" => {
+								let value = meta.value().unwrap();
+								let litstring = value.parse::<LitStr>().unwrap();
+								let value = litstring.parse::<Type>().unwrap();
+								outer_attributes.src = Some(value);
 							}
-						}
-						"ctx" => {
-							if let Ok(FnArg::Typed(x)) = litstr.parse::<FnArg>() {
-								outer_attributes.ctx = Some(x);
+							"ctx" => {
+								let value = meta.value().unwrap();
+								let litstring = value.parse::<LitStr>().unwrap();
+								let value = match litstring.parse::<FnArg>().unwrap() {
+									FnArg::Receiver(_) => panic!(),
+									FnArg::Typed(t) => t,
+								};
+								outer_attributes.ctx = Some(value);
 							}
-						}
-						"dis" => {
-							if let Ok(x) = litstr.parse::<Type>() {
-								outer_attributes.dis = Some(x)
+							"dis" => {
+								let value = meta.value().unwrap();
+								let litstring = value.parse::<LitStr>().unwrap();
+								let value = litstring.parse::<Type>().unwrap();
+								outer_attributes.dis = Some(value);
 							}
+							x => panic!("unknown attribute {}", x),
 						}
-						x => panic!("{}", x),
 					}
-				}
-				NestedMeta::Lit(_) => unimplemented!(),
-				_ => unimplemented!(),
+
+					Ok(())
+				})
+				.unwrap();
 			});
 
 		outer_attributes
@@ -148,31 +147,51 @@ pub fn parse_field_attributes(input: &[Attribute]) -> FieldAttributes {
 
 	input
 		.iter()
-		.filter(|a| a.path == parse_quote! { parst })
-		.filter_map(|a| a.parse_meta().ok())
-		.filter_map(|meta| match meta {
-			Meta::List(l) => Some(l.nested.into_iter()),
-			_ => None,
-		})
-		.flatten()
-		.for_each(|nested| match nested {
-			NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-				path,
-				lit: Lit::Str(l),
-				..
-			})) => match path.to_token_stream().to_string().as_str() {
-				"ctx" => field_attributes.context = InnerContext::Expr(l.parse().unwrap()),
-				"matches" => field_attributes.matches = Some(l.parse().unwrap()),
-				"assert_eq" => field_attributes.assert_eq = Some(l.parse().unwrap()),
-				"assert_ne" => field_attributes.assert_ne = Some(l.parse().unwrap()),
-				"with_context" => field_attributes.context = InnerContext::Expr(l.parse().unwrap()),
-				x => panic!("{x:#?}"),
-			},
-			NestedMeta::Lit(Lit::Str(l)) => match l.value().as_str() {
-				"inherit" => field_attributes.context = InnerContext::Inherit,
-				_ => unimplemented!(),
-			},
-			_ => unimplemented!(),
+		.filter(|a| a.path().is_ident("parst"))
+		.for_each(|a| {
+			a.parse_nested_meta(|meta| {
+				if let Some(ident) = meta.path.get_ident() {
+					let ident_string = ident.into_token_stream().to_string();
+					match ident_string.as_ref() {
+						"ctx" => {
+							let value = meta.value().unwrap();
+							let litstring = value.parse::<LitStr>().unwrap();
+							let value = litstring.parse::<Expr>().unwrap();
+							field_attributes.context = InnerContext::Expr(value);
+						}
+						"matches" => {
+							let value = meta.value().unwrap();
+							let litstring = value.parse::<LitStr>().unwrap();
+							let value = litstring
+								.parse_with(Pat::parse_multi_with_leading_vert)
+								.unwrap();
+							field_attributes.matches = Some(value);
+						}
+						"assert_eq" => {
+							let value = meta.value().unwrap();
+							let litstring = value.parse::<LitStr>().unwrap();
+							let value = litstring.parse::<Expr>().unwrap();
+							field_attributes.assert_eq = Some(value);
+						}
+						"assert_ne" => {
+							let value = meta.value().unwrap();
+							let litstring = value.parse::<LitStr>().unwrap();
+							let value = litstring.parse::<Expr>().unwrap();
+							field_attributes.assert_ne = Some(value);
+						}
+						"with_context" => {
+							let value = meta.value().unwrap();
+							let litstring = value.parse::<LitStr>().unwrap();
+							let value = litstring.parse::<Expr>().unwrap();
+							field_attributes.context = InnerContext::Expr(value);
+						}
+						x => panic!("unknown attribute {}", x),
+					}
+				}
+
+				Ok(())
+			})
+			.unwrap();
 		});
 
 	field_attributes
@@ -188,23 +207,25 @@ pub fn parse_variant_attributes(input: &[Attribute]) -> VariantAttributes {
 
 	input
 		.iter()
-		.filter(|a| a.path == parse_quote! { parst })
-		.filter_map(|a| a.parse_meta().ok())
-		.filter_map(|meta| match meta {
-			Meta::List(l) => Some(l.nested.into_iter()),
-			_ => None,
-		})
-		.flatten()
-		.for_each(|nested| match nested {
-			NestedMeta::Meta(Meta::NameValue(MetaNameValue {
-				path,
-				lit: Lit::Str(l),
-				..
-			})) => match path.to_token_stream().to_string().as_str() {
-				"dis" => variant_attributes.dis = Some(l.parse().unwrap()),
-				x => panic!("{x:#?}"),
-			},
-			_ => unimplemented!(),
+		.filter(|a| a.path().is_ident("parst"))
+		.for_each(|a| {
+			a.parse_nested_meta(|meta| {
+				if let Some(ident) = meta.path.get_ident() {
+					let ident_string = ident.into_token_stream().to_string();
+					match ident_string.as_ref() {
+						"dis" => {
+							let value = meta.value().unwrap();
+							let litstring = value.parse::<LitStr>().unwrap();
+							let value = litstring.parse::<Expr>().unwrap();
+							variant_attributes.dis = Some(value);
+						}
+						x => panic!("unknown attribute {}", x),
+					}
+				}
+
+				Ok(())
+			})
+			.unwrap();
 		});
 
 	variant_attributes
