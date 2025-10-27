@@ -1,5 +1,5 @@
 use crate::{
-	error::Error, helpers::try_split_array, Deparsable, PResult, PResultBytes, PResultStr, Parsable,
+	Deparsable, PResult, PResultBytes, PResultStr, Parsable, error::Error, helpers::try_split_array,
 };
 
 impl<'a, Src> Parsable<'a, Src> for ()
@@ -7,7 +7,7 @@ where
 	Src: ?Sized,
 {
 	#[inline]
-	fn read(source: &'a Src, _context: ()) -> PResult<Self, Src> { Ok(((), source)) }
+	fn read(source: &Src, _context: ()) -> PResult<'_, Self, Src> { Ok(((), source)) }
 }
 
 impl Deparsable for () {
@@ -19,7 +19,7 @@ impl Deparsable for () {
 
 impl<'a> Parsable<'a, [u8]> for &'a [u8] {
 	#[inline]
-	fn read(source: &'a [u8], _context: ()) -> PResultBytes<Self> { Ok((source, &[])) }
+	fn read(source: &'a [u8], _context: ()) -> PResultBytes<'a, Self> { Ok((source, &[])) }
 }
 
 impl Deparsable for &[u8] {
@@ -31,7 +31,7 @@ impl Deparsable for &[u8] {
 
 impl<'a> Parsable<'a, str> for &'a str {
 	#[inline]
-	fn read(source: &'a str, _context: ()) -> PResultStr<Self> { Ok((source, "")) }
+	fn read(source: &'a str, _context: ()) -> PResultStr<'a, Self> { Ok((source, "")) }
 }
 
 impl Deparsable for &str {
@@ -43,7 +43,7 @@ impl Deparsable for &str {
 
 impl<'a, const N: usize> Parsable<'a, [u8]> for &'a [u8; N] {
 	#[inline]
-	fn read(source: &'a [u8], _context: ()) -> PResultBytes<Self> {
+	fn read(source: &'a [u8], _context: ()) -> PResultBytes<'a, Self> {
 		let (output, source) = try_split_array(source).ok_or((Error::NotEnoughBytes, source))?;
 		Ok((output, source))
 	}
@@ -60,7 +60,7 @@ macro_rules! impl_prim {
 	($ty:ident $size:literal) => {
 		impl Parsable<'_, [u8]> for $ty {
 			#[inline]
-			fn read(source: &[u8], _context: ()) -> PResultBytes<Self> {
+			fn read(source: &[u8], _context: ()) -> PResultBytes<'_, Self> {
 				let (head, source) =
 					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, source))?;
 				let prim = $ty::from_ne_bytes(*head);

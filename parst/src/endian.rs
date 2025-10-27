@@ -1,4 +1,4 @@
-use crate::{error::Error, helpers::try_split_array, Deparsable, PResultBytes, Parsable};
+use crate::{Deparsable, PResultBytes, Parsable, error::Error, helpers::try_split_array};
 
 #[derive(Debug, Clone)]
 pub struct LE<T>(pub T);
@@ -26,7 +26,7 @@ macro_rules! impl_prim {
 	($ty:ident $size:literal) => {
 		impl Parsable<'_, [u8]> for LE<$ty> {
 			#[inline]
-			fn read(source: &[u8], _context: ()) -> PResultBytes<Self> {
+			fn read(source: &[u8], _context: ()) -> PResultBytes<'_, Self> {
 				let (head, source) =
 					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, source))?;
 				let prim = $ty::from_le_bytes(*head);
@@ -36,7 +36,7 @@ macro_rules! impl_prim {
 
 		impl Parsable<'_, [u8]> for BE<$ty> {
 			#[inline]
-			fn read(source: &[u8], _context: ()) -> PResultBytes<Self> {
+			fn read(source: &[u8], _context: ()) -> PResultBytes<'_, Self> {
 				let (head, source) =
 					try_split_array::<_, $size>(source).ok_or((Error::NotEnoughBytes, source))?;
 				let prim = $ty::from_be_bytes(*head);

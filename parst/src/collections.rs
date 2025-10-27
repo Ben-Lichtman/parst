@@ -8,7 +8,7 @@ where
 	T: Parsable<'a, Src, Ctx>,
 {
 	#[inline]
-	fn read(mut source: &'a Src, context: Ctx) -> PResult<Self, Src> {
+	fn read(mut source: &'a Src, context: Ctx) -> PResult<'a, Self, Src> {
 		try_from_fn(|_| {
 			let (element, this_bytes) = Parsable::read(source, context)?;
 			source = this_bytes;
@@ -48,7 +48,7 @@ macro_rules! impl_tuple {
             )+
 		{
 			#[inline]
-			fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src> {
+			fn read(source: &'a Src, context: Ctx) -> PResult<'a, Self, Src> {
                 $(
                     let ($N, source) = Parsable::read(source, context)?;
                 )+
@@ -84,7 +84,7 @@ where
 	T: Parsable<'a, Src, Ctx>,
 {
 	#[inline]
-	fn read(mut source: &'a Src, context: Ctx) -> PResult<Self, Src> {
+	fn read(mut source: &'a Src, context: Ctx) -> PResult<'a, Self, Src> {
 		let mut v = Vec::new();
 		while let Ok((element, remainder)) = Parsable::read(source, context) {
 			v.push(element);
@@ -114,7 +114,7 @@ where
 	T: Parsable<'a, Src, Ctx>,
 {
 	#[inline]
-	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src> {
+	fn read(source: &'a Src, context: Ctx) -> PResult<'a, Self, Src> {
 		let (boxed, source) = Parsable::read(source, context)?;
 		Ok((Box::new(boxed), source))
 	}
@@ -136,7 +136,7 @@ where
 	T: Parsable<'a, Src, Ctx>,
 {
 	#[inline]
-	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src> {
+	fn read(source: &'a Src, context: Ctx) -> PResult<'a, Self, Src> {
 		match Parsable::read(source, context) {
 			Ok((inner, source)) => Ok((Some(inner), source)),
 			Err(_) => Ok((None, source)),
@@ -162,5 +162,5 @@ where
 	Src: ?Sized,
 {
 	#[inline]
-	fn read(source: &Src, _context: Ctx) -> PResult<Self, Src> { Ok((PhantomData, source)) }
+	fn read(source: &Src, _context: Ctx) -> PResult<'_, Self, Src> { Ok((PhantomData, source)) }
 }

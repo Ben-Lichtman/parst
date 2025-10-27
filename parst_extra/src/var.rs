@@ -1,4 +1,4 @@
-use parst::{error::Error, Deparsable, PResult, PResultBytes, Parsable};
+use parst::{Deparsable, PResult, PResultBytes, Parsable, error::Error};
 
 pub fn try_split_at<S>(input: &[S], at: usize) -> Option<(&[S], &[S])> {
 	(input.len() >= at).then(|| input.split_at(at))
@@ -18,7 +18,7 @@ impl<'a, L> Parsable<'a, [u8]> for VarBytes<'a, L>
 where
 	L: Copy + Into<u64> + Parsable<'a, [u8], ()>,
 {
-	fn read(source: &'a [u8], _context: ()) -> PResultBytes<Self> {
+	fn read(source: &'a [u8], _context: ()) -> PResultBytes<'a, Self> {
 		let (length, source) = L::read(source, ())?;
 		let (slice, source) =
 			try_split_at(source, length.into() as _).ok_or((Error::NotEnoughBytes, source))?;
@@ -55,7 +55,7 @@ where
 	L: Copy + Into<u64> + Parsable<'a, S, ()>,
 	T: Parsable<'a, S, Ctx>,
 {
-	fn read(source: &'a S, context: Ctx) -> PResult<Self, S> {
+	fn read(source: &'a S, context: Ctx) -> PResult<'a, Self, S> {
 		let (length, mut source) = L::read(source, ())?;
 		let vec = (0..length.into())
 			.map(|_| {
@@ -81,6 +81,7 @@ where
 	}
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct ConsumingVec<T>(Vec<T>);
 
 impl<'a, Ctx, T> Parsable<'a, [u8], Ctx> for ConsumingVec<T>
@@ -89,7 +90,7 @@ where
 	T: Parsable<'a, [u8], Ctx>,
 {
 	#[inline]
-	fn read(mut source: &'a [u8], context: Ctx) -> PResult<Self, [u8]> {
+	fn read(mut source: &'a [u8], context: Ctx) -> PResult<'a, Self, [u8]> {
 		let mut v = Vec::new();
 		while let Ok((element, remainder)) = Parsable::read(source, context) {
 			v.push(element);
@@ -118,4 +119,8 @@ where
 
 impl<T> AsRef<[T]> for ConsumingVec<T> {
 	fn as_ref(&self) -> &[T] { self.0.as_ref() }
+}
+
+impl<T> AsMut<[T]> for ConsumingVec<T> {
+	fn as_mut(&mut self) -> &mut [T] { self.0.as_mut() }
 }

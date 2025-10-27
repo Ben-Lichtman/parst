@@ -23,7 +23,7 @@ pub trait Parsable<'a, Src, Ctx = ()>: Sized
 where
 	Src: ?Sized,
 {
-	fn read(source: &'a Src, context: Ctx) -> PResult<Self, Src>;
+	fn read(source: &'a Src, context: Ctx) -> PResult<'a, Self, Src>;
 }
 
 pub trait Deparsable<Ctx = ()> {
